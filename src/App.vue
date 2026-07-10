@@ -7,7 +7,7 @@ const route = useRoute()
 watch(
   () => route.meta.title,
   (title) => {
-    // Clean template literal syntax using backticks (`)
+    // Ensure this line uses clean backticks (`) for template literal evaluation
     document.title = title ? `${title} - Vislet` : 'Vislet'
 
     let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']")
@@ -19,8 +19,8 @@ watch(
     }
     
     link.type = 'image/png'
-    // Append a query string (?v=2) to force cache-busting just in case
-    link.href = '/vite.png?v=2' 
+    // Point to the renamed asset and append a unique timestamp 
+    link.href = `/logo-v2.png?t=${new Date().getTime()}` 
   },
   { immediate: true },
 )
