@@ -1,7 +1,8 @@
 import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
 import type { VisaApplication, VisaApplicationStatus } from '@/types'
-import { useMockServices } from './config'
+import { useMockServices, useFirebaseDocumentStorage } from './config'
 import { getFirestoreDb } from './api'
+import { getLocalApplicationById, getLocalApplications } from './localDocumentStorage'
 import {
   mockGetApplications,
   mockGetApplicationStatus,
@@ -24,6 +25,9 @@ export async function getApplications(userId: string): Promise<VisaApplication[]
   if (useMockServices()) {
     return mockGetApplications(userId)
   }
+  if (!useFirebaseDocumentStorage()) {
+    return getLocalApplications(userId)
+  }
   const db = getFirestoreDb()
   const snapshot = await getDocs(
     query(collection(db, 'applications'), where('userId', '==', userId)),
@@ -34,6 +38,11 @@ export async function getApplications(userId: string): Promise<VisaApplication[]
 export async function getApplicationStatus(applicationId: string): Promise<VisaApplicationStatus> {
   if (useMockServices()) {
     return mockGetApplicationStatus(applicationId)
+  }
+  if (!useFirebaseDocumentStorage()) {
+    const app = getLocalApplicationById(applicationId)
+    if (!app) throw new Error('Application not found')
+    return app.status
   }
   const db = getFirestoreDb()
   const snapshot = await getDoc(doc(db, 'applications', applicationId))
@@ -46,6 +55,9 @@ export async function getApplicationStatus(applicationId: string): Promise<VisaA
 export async function pollApplicationStatus(applicationId: string): Promise<VisaApplication | null> {
   if (useMockServices()) {
     return mockPollApplicationStatus(applicationId)
+  }
+  if (!useFirebaseDocumentStorage()) {
+    return getLocalApplicationById(applicationId)
   }
   const db = getFirestoreDb()
   const snapshot = await getDoc(doc(db, 'applications', applicationId))

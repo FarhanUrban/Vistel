@@ -30,6 +30,11 @@ async function handleLogout() {
   router.push({ name: 'Welcome' })
 }
 
+async function handleResetAppData() {
+  await authStore.resetAppData()
+  router.push({ name: 'OnboardingVisaType' })
+}
+
 async function handleDeleteAccount() {
   if (!canDelete.value) return
   try {
@@ -54,14 +59,20 @@ async function handleDeleteAccount() {
 
     <AppCard class="mb-4 space-y-3">
       <AppButton variant="outline" full-width @click="handleLogout">Log out</AppButton>
+      <AppButton variant="outline" full-width @click="handleResetAppData">
+        Reset app data &amp; restart onboarding
+      </AppButton>
       <AppButton
         variant="outline"
         full-width
         class="!border-red-300 !text-red-600 hover:!bg-red-50"
         @click="openDeleteModal"
       >
-        Delete account
+        Delete account permanently
       </AppButton>
+      <p class="text-center text-xs text-gray-400">
+        Reset clears onboarding, uploads, and applications on this device. Delete also removes your sign-in.
+      </p>
     </AppCard>
 
     <p class="text-center text-sm text-gray-500">
@@ -70,8 +81,8 @@ async function handleDeleteAccount() {
 
     <AppModal :open="showDeleteModal" title="Delete account" @close="showDeleteModal = false">
       <p class="text-sm text-gray-600">
-        This permanently deletes your account, uploaded documents, and application data. You will need to
-        complete onboarding again if you sign back in.
+        This wipes all local data (onboarding, uploads, applications) and permanently deletes your sign-in.
+        You will start fresh if you sign in again.
       </p>
 
       <AppErrorMessage v-if="authStore.error" :message="authStore.error" class="mt-4" />

@@ -1,7 +1,5 @@
-import { addDoc, collection, getDocs, query, where } from 'firebase/firestore'
 import type { Interview } from '@/types'
-import { useMockServices } from './config'
-import { getFirestoreDb } from './api'
+import { useMockServices, useFirebaseDocumentStorage } from './config'
 import { mockGetInterviews, mockAddInterview } from './mocks/interviewsMocks'
 
 function mapInterviewDoc(id: string, data: Record<string, unknown>): Interview {
@@ -20,6 +18,11 @@ export async function getInterviews(userId: string): Promise<Interview[]> {
   if (useMockServices()) {
     return mockGetInterviews(userId)
   }
+  if (!useFirebaseDocumentStorage()) {
+    return []
+  }
+  const { collection, getDocs, query, where } = await import('firebase/firestore')
+  const { getFirestoreDb } = await import('./api')
   const db = getFirestoreDb()
   const snapshot = await getDocs(
     query(collection(db, 'interviews'), where('userId', '==', userId)),
@@ -34,6 +37,11 @@ export async function addInterview(
   if (useMockServices()) {
     return mockAddInterview(interview)
   }
+  if (!useFirebaseDocumentStorage()) {
+    return { ...interview, id: `int-${Date.now()}`, userId }
+  }
+  const { addDoc, collection } = await import('firebase/firestore')
+  const { getFirestoreDb } = await import('./api')
   const db = getFirestoreDb()
   const docRef = await addDoc(collection(db, 'interviews'), {
     ...interview,
