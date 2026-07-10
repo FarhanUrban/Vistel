@@ -7,6 +7,7 @@ import AppLogo from '@/components/AppLogo.vue'
 import AppInput from '@/components/AppInput.vue'
 import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
+import SocialSignInButtons from '@/features/auth/components/SocialSignInButtons.vue'
 import { useAuthStore } from '@/features/auth/store'
 
 const router = useRouter()
@@ -34,6 +35,10 @@ async function handleSubmit() {
     router.push({ name: 'OnboardingVisaType' })
   }
 }
+
+function handleSocialSuccess() {
+  router.push({ name: 'OnboardingVisaType' })
+}
 </script>
 
 <template>
@@ -59,6 +64,8 @@ async function handleSubmit() {
         />
         <AppButton type="submit" full-width :loading="authStore.isLoading">Create Account</AppButton>
       </form>
+
+      <SocialSignInButtons @success="handleSocialSuccess" />
 
       <p class="text-center text-sm text-gray-500 mt-6">
         Already have an account?

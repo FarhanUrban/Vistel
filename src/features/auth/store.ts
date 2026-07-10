@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User } from '@/types'
+import type { SocialAuthProvider } from '@/features/auth/types'
 import * as authService from '@/services/authService'
 import { formatAuthError } from '@/services/authErrors'
 
@@ -33,16 +34,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loginWithGoogle() {
+  async function loginWithProvider(provider: SocialAuthProvider) {
     isLoading.value = true
     error.value = null
     try {
-      user.value = await authService.signInWithGoogle()
+      user.value = await authService.signInWithProvider(provider)
     } catch (e) {
       error.value = formatAuthError(e)
     } finally {
       isLoading.value = false
     }
+  }
+
+  /** @deprecated Use loginWithProvider('google') */
+  async function loginWithGoogle() {
+    return loginWithProvider('google')
   }
 
   async function logout() {
@@ -69,5 +75,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, isLoading, error, login, register, loginWithGoogle, logout, loadCurrentUser }
+  return { user, isLoading, error, login, register, loginWithProvider, loginWithGoogle, logout, loadCurrentUser }
 })
