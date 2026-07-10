@@ -1,0 +1,62 @@
+{
+  "default": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on white background",
+      "required": true
+    }
+  ],
+  "turkey_e-visa": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on white background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and accommodation details",
+      "required": false
+    }
+  ],
+  "india_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on white background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and accommodation details",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months bank statements showing sufficient funds",
+      "required": true
+    }
+  ]
+}
