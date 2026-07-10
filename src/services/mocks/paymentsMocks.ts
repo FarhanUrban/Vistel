@@ -13,7 +13,7 @@ export async function mockCalculateFee(
     student: 60,
   }
   const visaFee = visaFees[visaType] ?? 50
-  const serviceFee = 20
+  const serviceFee = 25
   return {
     visaFee,
     serviceFee,
