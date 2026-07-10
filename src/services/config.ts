@@ -50,8 +50,8 @@ export function useMockServices(): boolean {
 export type DocumentStorageBackend = 'local' | 'firebase'
 
 /**
- * Document file bytes backend. Defaults to `local` (IndexedDB) because Firebase Storage
- * requires a paid plan. Document metadata is always stored in Firestore.
+ * Document storage backend. Defaults to `local` (browser localStorage).
+ * Uploads are simulated locally — no Firebase Storage or Firestore document writes.
  * Set VITE_DOCUMENT_STORAGE=firebase when Firebase Storage is enabled.
  */
 export function getDocumentStorageBackend(): DocumentStorageBackend {

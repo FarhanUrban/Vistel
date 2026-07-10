@@ -12,7 +12,7 @@ import { deleteObject, listAll, ref as storageRef } from 'firebase/storage'
 import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore'
 import { getFirebaseAuth, getFirebaseStorage, getFirestoreDb } from './api'
 import { useMockServices, useFirebaseDocumentStorage } from './config'
-import { deleteAllLocalDocuments } from './localDocumentStorage'
+import { clearLocalApplications, clearStoredDocuments } from './localDocumentStorage'
 
 async function deleteStorageFolder(uid: string): Promise<void> {
   const storage = getFirebaseStorage()
@@ -104,7 +104,8 @@ export async function deleteAccount(password?: string): Promise<void> {
   if (useFirebaseDocumentStorage()) {
     await deleteStorageFolder(uid)
   } else {
-    await deleteAllLocalDocuments(uid)
+    clearStoredDocuments(uid)
+    clearLocalApplications(uid)
   }
   await deleteFirestoreUserData(uid)
   await deleteUser(firebaseUser)
