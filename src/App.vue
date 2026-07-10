@@ -4,13 +4,6 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-// watch(
-//   () => route.meta.title,
-//   (title) => {
-//     document.title = title ? `${title} — Vislet` : 'Vislet'
-//   },
-//   { immediate: true },
-// )
 watch(
   () => route.meta.title,
   (title) => {
