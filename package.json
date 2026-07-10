@@ -8,7 +8,12 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "firebase:login": "firebase login",
+    "firebase:deploy": "npm run build && firebase deploy",
+    "firebase:deploy:hosting": "npm run build && firebase deploy --only hosting",
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules,storage:rules",
+    "firebase:deploy:indexes": "firebase deploy --only firestore:indexes"
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
@@ -26,6 +31,7 @@
     "@vue/eslint-config-typescript": "^14.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-vue": "^9.0.0",
+    "firebase-tools": "^14.0.0",
     "prettier": "^3.0.0",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.7.0",

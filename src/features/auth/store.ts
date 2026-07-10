@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User } from '@/types'
 import * as authService from '@/services/authService'
+import { formatAuthError } from '@/services/authErrors'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -14,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       user.value = await authService.signIn(email, password)
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Login failed'
+      error.value = formatAuthError(e)
     } finally {
       isLoading.value = false
     }
@@ -26,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       user.value = await authService.signUp(email, password)
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Sign up failed'
+      error.value = formatAuthError(e)
     } finally {
       isLoading.value = false
     }
@@ -38,7 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       user.value = await authService.signInWithGoogle()
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Google sign in failed'
+      error.value = formatAuthError(e)
     } finally {
       isLoading.value = false
     }
@@ -51,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
       await authService.signOut()
       user.value = null
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Logout failed'
+      error.value = formatAuthError(e)
     } finally {
       isLoading.value = false
     }
@@ -62,7 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       user.value = await authService.getCurrentUser()
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load user'
+      error.value = formatAuthError(e)
     } finally {
       isLoading.value = false
     }
