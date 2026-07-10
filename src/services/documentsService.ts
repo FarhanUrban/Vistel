@@ -1,10 +1,10 @@
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { addDoc, collection } from 'firebase/firestore'
+import { addDoc, collection, doc, getDocs, setDoc } from 'firebase/firestore'
 import type { RequiredDocument, UploadedDocument, VisaType } from '@/types'
 import { useMockServices, useFirebaseDocumentStorage } from './config'
 import { getFirebaseStorage, getFirestoreDb } from './api'
 import { iso2ToLegacySlug } from './visaIndexService'
-import { saveLocalDocument } from './localDocumentStorage'
+import { getLocalDocumentUrl, saveLocalDocument } from './localDocumentStorage'
 import {
   mockGetRequiredDocuments,
   mockUploadDocument,
@@ -47,6 +47,51 @@ function serializeDocumentsForFirestore(documents: UploadedDocument[]) {
   }))
 }
 
+async function saveDocumentMetadata(
+  userId: string,
+  uploaded: UploadedDocument,
+  storage: 'local' | 'firebase',
+): Promise<void> {
+  const db = getFirestoreDb()
+  await setDoc(doc(db, 'users', userId, 'documents', uploaded.id), {
+    id: uploaded.id,
+    name: uploaded.name,
+    uploadedAt: uploaded.uploadedAt,
+    documentTypeId: uploaded.documentTypeId ?? null,
+    storage,
+    ...(storage === 'firebase' ? { url: uploaded.url } : {}),
+  })
+}
+
+export async function getUserDocuments(userId: string): Promise<UploadedDocument[]> {
+  if (useMockServices()) return []
+
+  const db = getFirestoreDb()
+  const snapshot = await getDocs(collection(db, 'users', userId, 'documents'))
+
+  const documents = await Promise.all(
+    snapshot.docs.map(async (entry) => {
+      const data = entry.data()
+      const base: UploadedDocument = {
+        id: data.id as string,
+        name: data.name as string,
+        uploadedAt: data.uploadedAt as string,
+        documentTypeId: (data.documentTypeId as string | null) ?? undefined,
+        url: '',
+      }
+
+      if (data.storage === 'firebase' && typeof data.url === 'string') {
+        return { ...base, url: data.url }
+      }
+
+      const localUrl = await getLocalDocumentUrl(base.id)
+      return localUrl ? { ...base, url: localUrl } : null
+    }),
+  )
+
+  return documents.filter((doc): doc is UploadedDocument => doc !== null)
+}
+
 export async function getRequiredDocuments(
   destinationCountry: string,
   visaType: VisaType,
@@ -72,7 +117,9 @@ export async function uploadDocument(
   }
 
   if (!useFirebaseDocumentStorage()) {
-    return saveLocalDocument(file, userId, documentTypeId)
+    const uploaded = await saveLocalDocument(file, userId, documentTypeId)
+    await saveDocumentMetadata(userId, uploaded, 'local')
+    return uploaded
   }
 
   const storage = getFirebaseStorage()
@@ -83,13 +130,15 @@ export async function uploadDocument(
   try {
     await uploadBytes(ref, file)
     const url = await getDownloadURL(ref)
-    return {
+    const uploaded: UploadedDocument = {
       id: path,
       name: file.name,
       url,
       uploadedAt: new Date().toISOString(),
       documentTypeId,
     }
+    await saveDocumentMetadata(userId, uploaded, 'firebase')
+    return uploaded
   } catch (error) {
     throw new Error(formatStorageError(error))
   }

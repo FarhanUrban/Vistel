@@ -23,10 +23,16 @@ export const useDocumentsStore = defineStore('documents', () => {
     isLoading.value = true
     error.value = null
     try {
-      requiredDocuments.value = await documentsService.getRequiredDocuments(
-        onboarding.destinationCountry,
-        onboarding.visaType,
-      )
+      const auth = useAuthStore()
+      const [required, uploaded] = await Promise.all([
+        documentsService.getRequiredDocuments(
+          onboarding.destinationCountry,
+          onboarding.visaType,
+        ),
+        auth.user?.id ? documentsService.getUserDocuments(auth.user.id) : Promise.resolve([]),
+      ])
+      requiredDocuments.value = required
+      uploadedDocuments.value = uploaded
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load required documents'
     } finally {

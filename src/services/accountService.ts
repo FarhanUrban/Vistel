@@ -36,6 +36,9 @@ async function deleteStorageFolder(uid: string): Promise<void> {
 async function deleteFirestoreUserData(uid: string): Promise<void> {
   const db = getFirestoreDb()
 
+  const userDocs = await getDocs(collection(db, 'users', uid, 'documents'))
+  await Promise.all(userDocs.docs.map((d) => deleteDoc(d.ref)))
+
   for (const collectionName of ['applications', 'interviews'] as const) {
     const snapshot = await getDocs(
       query(collection(db, collectionName), where('userId', '==', uid)),
