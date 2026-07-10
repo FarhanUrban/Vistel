@@ -18,7 +18,7 @@
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
     "@vueuse/core": "^13.0.0",
-    "firebase": "^11.0.0",
+    "firebase": "^11.10.0",
     "pinia": "^3.0.0",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
