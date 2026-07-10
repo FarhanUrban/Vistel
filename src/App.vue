@@ -20,7 +20,7 @@ watch(
     }
     
     link.type = 'image/png'
-    link.href = '/logo.png' // Matches the path in your public folder
+    link.href = '/vite.png' // Matches the path in your public folder
   },
   { immediate: true },
 )
