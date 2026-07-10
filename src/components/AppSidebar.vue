@@ -23,7 +23,7 @@ function navigate(path: string) {
 
 <template>
   <aside class="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-gray-200 lg:bg-white">
-    <div class="px-6 py-6">
+    <div class="px-20 py-20">
       <AppLogo />
     </div>
     <nav class="flex-1 space-y-1 px-3">
