@@ -42,7 +42,7 @@ async function handlePay() {
         </div>
         <div class="flex justify-between">
           <span class="text-gray-500">Service fee</span>
-          <span class="text-navy">${{ paymentsStore.feeBreakdown.serviceFee.toFixed(2) }}</span>
+          <span class="text-navy">${{ paymentsStore.feeBreakdown.serviceFee.toFixed(4) }}</span>
         </div>
         <div class="border-t border-gray-200 pt-2 flex justify-between font-semibold">
           <span class="text-navy">Total</span>
