@@ -121,3 +121,17 @@ export function getLocalApplicationById(applicationId: string): VisaApplication 
 export function clearLocalApplications(userId: string): void {
   saveApps(loadApps().filter((app) => app.userId !== userId))
 }
+
+const VISLET_LOCAL_KEYS = [
+  'vislet_onboarding',
+  'vislet_uploaded_docs',
+  'vislet_applications',
+  'vislet_mock_user',
+] as const
+
+/** Removes all Vislet browser data so onboarding can start fresh. */
+export function wipeAllVisletLocalData(): void {
+  for (const key of VISLET_LOCAL_KEYS) {
+    localStorage.removeItem(key)
+  }
+}

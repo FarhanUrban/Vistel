@@ -14,6 +14,7 @@ import type { User } from '@/types'
 import { useMockServices } from './config'
 import { getFirebaseAuth } from './api'
 import * as accountService from './accountService'
+import { wipeAllVisletLocalData } from './localDocumentStorage'
 import {
   mockSignIn,
   mockSignUp,
@@ -117,8 +118,8 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function deleteAccount(password?: string): Promise<void> {
   if (useMockServices()) {
+    wipeAllVisletLocalData()
     await mockSignOut()
-    localStorage.removeItem('vislet_mock_user')
     return
   }
   await accountService.deleteAccount(password)

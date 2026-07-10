@@ -6,6 +6,7 @@ import * as authService from '@/services/authService'
 import { formatAuthError } from '@/services/authErrors'
 import { useOnboardingStore } from '@/features/onboarding/store'
 import { useDocumentsStore } from '@/features/documents/store'
+import { wipeAllVisletLocalData } from '@/services/localDocumentStorage'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -71,9 +72,27 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       await authService.deleteAccount(password)
+      wipeAllVisletLocalData()
       useOnboardingStore().reset()
       useDocumentsStore().reset()
-      localStorage.removeItem('vislet_mock_user')
+      user.value = null
+    } catch (e) {
+      error.value = formatAuthError(e)
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /** Clears all local app data and signs out without deleting the Firebase account. */
+  async function resetAppData() {
+    isLoading.value = true
+    error.value = null
+    try {
+      wipeAllVisletLocalData()
+      useOnboardingStore().reset()
+      useDocumentsStore().reset()
+      await authService.signOut()
       user.value = null
     } catch (e) {
       error.value = formatAuthError(e)
@@ -104,6 +123,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithGoogle,
     logout,
     deleteAccount,
+    resetAppData,
     loadCurrentUser,
   }
 })

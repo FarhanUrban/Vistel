@@ -6,13 +6,18 @@ import {
   OAuthProvider,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
+  signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth'
 import { deleteObject, listAll, ref as storageRef } from 'firebase/storage'
 import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore'
 import { getFirebaseAuth, getFirebaseStorage, getFirestoreDb } from './api'
 import { useMockServices, useFirebaseDocumentStorage } from './config'
-import { clearLocalApplications, clearStoredDocuments } from './localDocumentStorage'
+import {
+  clearLocalApplications,
+  clearStoredDocuments,
+  wipeAllVisletLocalData,
+} from './localDocumentStorage'
 
 async function deleteStorageFolder(uid: string): Promise<void> {
   const storage = getFirebaseStorage()
@@ -90,6 +95,7 @@ async function reauthenticateUser(firebaseUser: FirebaseUser, password?: string)
 
 export async function deleteAccount(password?: string): Promise<void> {
   if (useMockServices()) {
+    wipeAllVisletLocalData()
     return
   }
 
@@ -101,12 +107,29 @@ export async function deleteAccount(password?: string): Promise<void> {
 
   const uid = firebaseUser.uid
   await reauthenticateUser(firebaseUser, password)
+
+  wipeAllVisletLocalData()
+  clearStoredDocuments(uid)
+  clearLocalApplications(uid)
+
   if (useFirebaseDocumentStorage()) {
-    await deleteStorageFolder(uid)
-  } else {
-    clearStoredDocuments(uid)
-    clearLocalApplications(uid)
+    try {
+      await deleteStorageFolder(uid)
+    } catch {
+      // Storage may be unavailable
+    }
   }
-  await deleteFirestoreUserData(uid)
-  await deleteUser(firebaseUser)
+
+  try {
+    await deleteFirestoreUserData(uid)
+  } catch {
+    // Firestore may be blocked (e.g. ad blocker) — local data is already wiped
+  }
+
+  try {
+    await deleteUser(firebaseUser)
+  } catch (error) {
+    await firebaseSignOut(auth)
+    throw error
+  }
 }
