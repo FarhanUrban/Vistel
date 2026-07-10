@@ -11,6 +11,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@dataconnect/generated": "file:src/dataconnect-generated",
     "@vueuse/core": "^13.0.0",
     "firebase": "^11.0.0",
     "pinia": "^3.0.0",
