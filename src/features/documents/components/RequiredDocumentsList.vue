@@ -1,0 +1,108 @@
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import AppCard from '@/components/AppCard.vue'
+import AppButton from '@/components/AppButton.vue'
+import AppErrorMessage from '@/components/AppErrorMessage.vue'
+import AppLoadingSpinner from '@/components/AppLoadingSpinner.vue'
+import DocumentCaptureModal from '@/features/documents/components/DocumentCaptureModal.vue'
+import { useDocumentsStore } from '@/features/documents/store'
+
+const documentsStore = useDocumentsStore()
+
+const emit = defineEmits<{
+  scan: []
+  finalize: []
+}>()
+
+const captureOpen = ref(false)
+const activeDocumentId = ref<string | undefined>()
+const activeDocumentName = ref<string | undefined>()
+
+onMounted(() => {
+  documentsStore.loadRequiredDocuments()
+})
+
+function openCapture(doc: { id: string; name: string }) {
+  activeDocumentId.value = doc.id
+  activeDocumentName.value = doc.name
+  captureOpen.value = true
+}
+
+async function handleUpload(file: File) {
+  await documentsStore.uploadDocument(file, activeDocumentId.value)
+  if (!documentsStore.error) {
+    captureOpen.value = false
+  }
+}
+
+async function handleSubmit() {
+  await documentsStore.submitApplication()
+  if (documentsStore.isSubmitted) {
+    emit('finalize')
+  }
+}
+</script>
+
+<template>
+  <div>
+    <h1 class="text-2xl font-semibold text-navy mb-2 lg:text-3xl">Required documents</h1>
+    <p class="text-gray-500 mb-6">Upload each required document before submitting your application.</p>
+
+    <AppErrorMessage v-if="documentsStore.error" :message="documentsStore.error" class="mb-4" />
+    <AppLoadingSpinner v-if="documentsStore.isLoading" />
+
+    <ul v-else class="mb-6 space-y-3">
+      <li v-for="doc in documentsStore.requiredDocuments" :key="doc.id">
+        <AppCard padding="sm" class="cursor-pointer" @click="openCapture(doc)">
+          <div class="flex items-start gap-3">
+            <span
+              class="mt-0.5 rounded px-2 py-0.5 text-sm font-medium"
+              :class="
+                documentsStore.isDocumentUploaded(doc.id)
+                  ? 'bg-accent-blue/15 text-navy'
+                  : doc.required
+                    ? 'bg-accent-orange/20 text-navy'
+                    : 'bg-gray-100 text-gray-500'
+              "
+            >
+              {{
+                documentsStore.isDocumentUploaded(doc.id)
+                  ? 'Uploaded'
+                  : doc.required
+                    ? 'Required'
+                    : 'Optional'
+              }}
+            </span>
+            <div class="flex-1">
+              <p class="font-medium text-navy">{{ doc.name }}</p>
+              <p class="mt-0.5 text-sm text-gray-500">{{ doc.description }}</p>
+            </div>
+            <span class="text-sm text-accent-blue">Upload</span>
+          </div>
+        </AppCard>
+      </li>
+    </ul>
+
+    <div class="space-y-3">
+      <AppButton variant="outline" full-width @click="emit('scan')">Scan More Documents</AppButton>
+      <AppButton
+        full-width
+        :loading="documentsStore.isSubmitting"
+        :disabled="!documentsStore.allRequiredUploaded()"
+        @click="handleSubmit"
+      >
+        Finalize E-Visa Application
+      </AppButton>
+    </div>
+
+    <DocumentCaptureModal
+      :open="captureOpen"
+      :document-type-id="activeDocumentId"
+      :document-name="activeDocumentName"
+      :loading="documentsStore.isLoading"
+      :error="documentsStore.error"
+      @close="captureOpen = false"
+      @upload="handleUpload"
+    />
+  </div>
+</template>

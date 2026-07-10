@@ -1,0 +1,16 @@
+{
+  "TR": "https://www.evisa.gov.tr/en/",
+  "IN": "https://indianvisaonline.gov.in/",
+  "KE": "https://evisa.go.ke/",
+  "VN": "https://evisa.xuatnhapcanh.gov.vn/",
+  "EG": "https://www.visa2egypt.gov.eg/",
+  "TH": "https://www.thaievisa.go.th/",
+  "US": "https://travel.state.gov/content/travel/en/us-visas.html",
+  "GB": "https://www.gov.uk/browse/visas-immigration",
+  "CA": "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada.html",
+  "AU": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-finder",
+  "JP": "https://www.mofa.go.jp/j_info/visit/visa/",
+  "FR": "https://france-visas.gouv.fr/",
+  "DE": "https://www.auswaertiges-amt.de/en/visa-service",
+  "DEFAULT": "https://www.google.com/search?q=official+visa+requirements"
+}
