@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
 import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics'
-import { getAuth, type Auth } from 'firebase/auth'
+import { browserLocalPersistence, getAuth, setPersistence, type Auth } from 'firebase/auth'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 import { getStorage, type FirebaseStorage } from 'firebase/storage'
 import { useMockServices } from './config'
@@ -20,6 +20,7 @@ let db: Firestore | null = null
 let storage: FirebaseStorage | null = null
 let analytics: Analytics | null = null
 let analyticsInitPromise: Promise<Analytics | null> | null = null
+let authInitPromise: Promise<Auth> | null = null
 
 function assertFirebaseEnv(): void {
   const missing = FIREBASE_ENV_KEYS.filter((key) => !import.meta.env[key]?.trim())
@@ -65,6 +66,22 @@ export function getFirebaseAuth(): Auth {
     auth = getAuth(getFirebaseApp())
   }
   return auth
+}
+
+/** Initializes Auth with local persistence (required for hosted session restore). */
+export async function initFirebaseAuth(): Promise<Auth> {
+  if (useMockServices()) {
+    throw new Error('Firebase is disabled in mock mode. Set VITE_USE_MOCK_SERVICES=false to use Firebase.')
+  }
+  if (authInitPromise) return authInitPromise
+
+  authInitPromise = (async () => {
+    const firebaseAuth = getFirebaseAuth()
+    await setPersistence(firebaseAuth, browserLocalPersistence)
+    return firebaseAuth
+  })()
+
+  return authInitPromise
 }
 
 export function getFirestoreDb(): Firestore {

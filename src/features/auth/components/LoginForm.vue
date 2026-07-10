@@ -7,6 +7,7 @@ import AppLogo from '@/components/AppLogo.vue'
 import AppInput from '@/components/AppInput.vue'
 import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
+import SocialSignInButtons from '@/features/auth/components/SocialSignInButtons.vue'
 import { useAuthStore } from '@/features/auth/store'
 
 const router = useRouter()
@@ -22,11 +23,8 @@ async function handleSubmit() {
   }
 }
 
-async function handleGoogleLogin() {
-  await authStore.loginWithGoogle()
-  if (authStore.user) {
-    router.push({ name: 'Dashboard' })
-  }
+function handleSocialSuccess() {
+  router.push({ name: 'Dashboard' })
 }
 </script>
 
@@ -47,11 +45,7 @@ async function handleGoogleLogin() {
         <AppButton type="submit" full-width :loading="authStore.isLoading">Log In</AppButton>
       </form>
 
-      <div class="mt-4">
-        <AppButton variant="outline" full-width :loading="authStore.isLoading" @click="handleGoogleLogin">
-          Continue with Google
-        </AppButton>
-      </div>
+      <SocialSignInButtons @success="handleSocialSuccess" />
 
       <p class="text-center text-sm text-gray-500 mt-6">
         Don't have an account?

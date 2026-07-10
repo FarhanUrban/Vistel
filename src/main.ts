@@ -3,16 +3,24 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { useMockServices } from './services/config'
-import { initFirebaseAnalytics } from './services/api'
+import { initFirebaseAnalytics, initFirebaseAuth } from './services/api'
+import { useAuthStore } from './features/auth/store'
 import './assets/main.css'
 
-const app = createApp(App)
+async function bootstrap() {
+  const app = createApp(App)
+  const pinia = createPinia()
 
-app.use(createPinia())
-app.use(router)
+  app.use(pinia)
+  app.use(router)
 
-app.mount('#app')
+  if (!useMockServices()) {
+    await initFirebaseAuth()
+    await useAuthStore(pinia).loadCurrentUser()
+    void initFirebaseAnalytics()
+  }
 
-if (!useMockServices()) {
-  void initFirebaseAnalytics()
+  app.mount('#app')
 }
+
+void bootstrap()
