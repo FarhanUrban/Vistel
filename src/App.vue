@@ -7,7 +7,8 @@ const route = useRoute()
 watch(
   () => route.meta.title,
   (title) => {
-    document.title = title ? `${title} — Vislet` : 'Vislet'
+    // document.title = title ? `${title} — Vislet` : 'Vislet'
+    document.title = title ? `Vislet` : 'Vislet'
   },
   { immediate: true },
 )
