@@ -1,17 +1,26 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { OnboardingData } from '@/types'
+import { normalizeCountryCode } from '@/services/visaIndexService'
 
 const STORAGE_KEY = 'vislet_onboarding'
 
 function loadFromStorage(): OnboardingData {
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored) {
-    return JSON.parse(stored) as OnboardingData
+    const parsed = JSON.parse(stored) as Partial<OnboardingData>
+    return {
+      visaType: parsed.visaType ?? null,
+      passportType: parsed.passportType ?? null,
+      passportCountry: normalizeCountryCode(parsed.passportCountry ?? null),
+      hasAdditionalDocs: parsed.hasAdditionalDocs ?? null,
+      destinationCountry: normalizeCountryCode(parsed.destinationCountry ?? null),
+    }
   }
   return {
     visaType: null,
     passportType: null,
+    passportCountry: null,
     hasAdditionalDocs: null,
     destinationCountry: null,
   }
@@ -22,15 +31,18 @@ function saveToStorage(data: OnboardingData) {
 }
 
 export const useOnboardingStore = defineStore('onboarding', () => {
-  const visaType = ref(loadFromStorage().visaType)
-  const passportType = ref(loadFromStorage().passportType)
-  const hasAdditionalDocs = ref(loadFromStorage().hasAdditionalDocs)
-  const destinationCountry = ref(loadFromStorage().destinationCountry)
+  const initial = loadFromStorage()
+  const visaType = ref(initial.visaType)
+  const passportType = ref(initial.passportType)
+  const passportCountry = ref(initial.passportCountry)
+  const hasAdditionalDocs = ref(initial.hasAdditionalDocs)
+  const destinationCountry = ref(initial.destinationCountry)
 
   function persist() {
     saveToStorage({
       visaType: visaType.value,
       passportType: passportType.value,
+      passportCountry: passportCountry.value,
       hasAdditionalDocs: hasAdditionalDocs.value,
       destinationCountry: destinationCountry.value,
     })
@@ -46,13 +58,18 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     persist()
   }
 
+  function setPassportCountry(value: string) {
+    passportCountry.value = value.toUpperCase()
+    persist()
+  }
+
   function setHasAdditionalDocs(value: boolean) {
     hasAdditionalDocs.value = value
     persist()
   }
 
   function setDestinationCountry(value: string) {
-    destinationCountry.value = value
+    destinationCountry.value = value.toUpperCase()
     persist()
   }
 
@@ -60,6 +77,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     return (
       visaType.value !== null &&
       passportType.value !== null &&
+      passportCountry.value !== null &&
       hasAdditionalDocs.value !== null &&
       destinationCountry.value !== null
     )
@@ -68,6 +86,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   function reset() {
     visaType.value = null
     passportType.value = null
+    passportCountry.value = null
     hasAdditionalDocs.value = null
     destinationCountry.value = null
     localStorage.removeItem(STORAGE_KEY)
@@ -76,10 +95,12 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   return {
     visaType,
     passportType,
+    passportCountry,
     hasAdditionalDocs,
     destinationCountry,
     setVisaType,
     setPassportType,
+    setPassportCountry,
     setHasAdditionalDocs,
     setDestinationCountry,
     isComplete,

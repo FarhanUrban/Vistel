@@ -34,15 +34,21 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  async function uploadDocument(file: File) {
+  async function uploadDocument(file: File, documentTypeId?: string) {
     const auth = useAuthStore()
-    const userId = auth.user?.id ?? 'anonymous'
+    if (!auth.user?.id) {
+      error.value = 'You must be logged in to upload documents'
+      return
+    }
 
     isLoading.value = true
     error.value = null
     try {
-      const uploaded = await documentsService.uploadDocument(file, userId)
-      uploadedDocuments.value.push(uploaded)
+      const uploaded = await documentsService.uploadDocument(file, auth.user.id, documentTypeId)
+      uploadedDocuments.value = [
+        ...uploadedDocuments.value.filter((doc) => doc.documentTypeId !== documentTypeId),
+        uploaded,
+      ]
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Upload failed'
     } finally {
@@ -50,12 +56,36 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
+  function isDocumentUploaded(documentTypeId: string): boolean {
+    return uploadedDocuments.value.some((doc) => doc.documentTypeId === documentTypeId)
+  }
+
   async function submitApplication() {
+    const auth = useAuthStore()
+    const onboarding = useOnboardingStore()
+
+    if (!auth.user?.id) {
+      error.value = 'You must be logged in to submit an application'
+      return
+    }
+    if (!onboarding.visaType || !onboarding.destinationCountry) {
+      error.value = 'Please complete onboarding first'
+      return
+    }
+    if (!allRequiredUploaded()) {
+      error.value = 'Please upload all required documents before submitting'
+      return
+    }
+
     isSubmitting.value = true
     error.value = null
     try {
-      const applicationId = `app-${Date.now()}`
-      await documentsService.submitApplication(applicationId)
+      await documentsService.submitApplication({
+        userId: auth.user.id,
+        destinationCountry: onboarding.destinationCountry,
+        visaType: onboarding.visaType,
+        documents: uploadedDocuments.value,
+      })
       isSubmitted.value = true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Submission failed'
@@ -66,9 +96,16 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   function allRequiredUploaded(): boolean {
     const required = requiredDocuments.value.filter((d) => d.required)
-    return required.every((req) =>
-      uploadedDocuments.value.some((up) => up.name.toLowerCase().includes(req.id)),
-    )
+    return required.every((req) => isDocumentUploaded(req.id))
+  }
+
+  function reset() {
+    requiredDocuments.value = []
+    uploadedDocuments.value = []
+    isLoading.value = false
+    isSubmitting.value = false
+    error.value = null
+    isSubmitted.value = false
   }
 
   return {
@@ -82,5 +119,7 @@ export const useDocumentsStore = defineStore('documents', () => {
     uploadDocument,
     submitApplication,
     allRequiredUploaded,
+    isDocumentUploaded,
+    reset,
   }
 })

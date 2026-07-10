@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import AppCard from '@/components/AppCard.vue'
 import AppLogo from '@/components/AppLogo.vue'
@@ -9,22 +9,29 @@ import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
 import SocialSignInButtons from '@/features/auth/components/SocialSignInButtons.vue'
 import { useAuthStore } from '@/features/auth/store'
+import { getPostAuthRoute } from '@/features/auth/utils'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
 
+function afterLogin() {
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
+  router.push(getPostAuthRoute(redirect))
+}
+
 async function handleSubmit() {
   await authStore.login(email.value, password.value)
   if (authStore.user) {
-    router.push({ name: 'Dashboard' })
+    afterLogin()
   }
 }
 
 function handleSocialSuccess() {
-  router.push({ name: 'Dashboard' })
+  afterLogin()
 }
 </script>
 

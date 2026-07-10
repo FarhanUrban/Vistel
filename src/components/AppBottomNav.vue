@@ -8,7 +8,7 @@ const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: '📊' },
   { name: 'Documents', path: '/documents/required-list', icon: '📄' },
   { name: 'Payment', path: '/payment', icon: '💳' },
-  { name: 'About', path: '/about', icon: 'ℹ️' },
+  { name: 'Profile', path: '/profile', icon: '👤' },
 ]
 
 function isActive(path: string): boolean {
@@ -21,7 +21,7 @@ function navigate(path: string) {
 </script>
 
 <template>
-  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom">
+  <nav class="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white safe-area-bottom lg:hidden">
     <div class="flex justify-around items-center h-16 max-w-lg mx-auto">
       <button
         v-for="item in navItems"

@@ -1,4 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/features/auth/store'
+import { useOnboardingStore } from '@/features/onboarding/store'
+import { useMockServices } from '@/services/config'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,6 +47,12 @@ const router = createRouter({
       meta: { title: 'Additional Documents' },
     },
     {
+      path: '/onboarding/passport-country',
+      name: 'OnboardingPassportCountry',
+      component: () => import('@/views/PassportCountryView.vue'),
+      meta: { title: 'Passport Country' },
+    },
+    {
       path: '/onboarding/destination',
       name: 'OnboardingDestination',
       component: () => import('@/views/DestinationView.vue'),
@@ -53,13 +62,13 @@ const router = createRouter({
       path: '/documents/scan',
       name: 'DocumentScan',
       component: () => import('@/views/DocumentScanView.vue'),
-      meta: { title: 'Scan Documents' },
+      meta: { title: 'Scan Documents', requiresAuth: true },
     },
     {
       path: '/documents/required-list',
       name: 'RequiredDocuments',
       component: () => import('@/views/RequiredListView.vue'),
-      meta: { title: 'Required Documents' },
+      meta: { title: 'Required Documents', requiresAuth: true },
     },
     {
       path: '/payment',
@@ -86,6 +95,12 @@ const router = createRouter({
       meta: { title: 'About Us' },
     },
     {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { title: 'Profile', requiresAuth: true },
+    },
+    {
       path: '/rejections/possible-reasons',
       name: 'PossibleRejectionReasons',
       component: () => import('@/views/PossibleRejectionReasonsView.vue'),
@@ -104,6 +119,33 @@ const router = createRouter({
       meta: { title: 'Waiting for E-Visa Check' },
     },
   ],
+})
+
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth || useMockServices()) {
+    if (!useMockServices() && to.name === 'Dashboard') {
+      const authStore = useAuthStore()
+      if (!authStore.user) {
+        await authStore.loadCurrentUser()
+      }
+      if (authStore.user) {
+        const onboarding = useOnboardingStore()
+        if (!onboarding.isComplete()) {
+          return { name: 'OnboardingVisaType' }
+        }
+      }
+    }
+    return true
+  }
+
+  const authStore = useAuthStore()
+  if (!authStore.user) {
+    await authStore.loadCurrentUser()
+  }
+  if (!authStore.user) {
+    return { name: 'Login', query: { redirect: to.fullPath } }
+  }
+  return true
 })
 
 export default router

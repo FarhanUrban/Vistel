@@ -5,6 +5,7 @@ import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
 import AppLoadingSpinner from '@/components/AppLoadingSpinner.vue'
 import { useDashboardStore } from '@/features/dashboard/store'
+import { getCountryName } from '@/services/visaIndexService'
 
 const dashboardStore = useDashboardStore()
 
@@ -23,7 +24,7 @@ function formatDate(dateString: string): string {
 
 <template>
   <div>
-    <h1 class="text-2xl font-semibold text-navy mb-6">Dashboard</h1>
+    <h1 class="text-2xl font-semibold text-navy mb-6 lg:text-3xl">Dashboard</h1>
 
     <AppErrorMessage v-if="dashboardStore.error" :message="dashboardStore.error" class="mb-4" />
     <AppLoadingSpinner v-if="dashboardStore.isLoading" />
@@ -38,7 +39,7 @@ function formatDate(dateString: string): string {
           <AppCard v-for="app in dashboardStore.waitingApplications" :key="app.id" padding="sm">
             <div class="flex justify-between items-start">
               <div>
-                <p class="font-medium text-navy">{{ app.destinationCountry }}</p>
+                <p class="font-medium text-navy">{{ getCountryName(app.destinationCountry) }}</p>
                 <p class="text-sm text-gray-500 capitalize">{{ app.visaType.replace('-', ' ') }}</p>
               </div>
               <span class="text-xs font-medium px-2 py-1 rounded bg-accent-orange/20 text-navy">
@@ -76,7 +77,7 @@ function formatDate(dateString: string): string {
           <AppCard v-for="app in dashboardStore.completedApplications" :key="app.id" padding="sm">
             <div class="flex justify-between items-start">
               <div>
-                <p class="font-medium text-navy">{{ app.destinationCountry }}</p>
+                <p class="font-medium text-navy">{{ getCountryName(app.destinationCountry) }}</p>
                 <p class="text-sm text-gray-500 capitalize">{{ app.visaType.replace('-', ' ') }}</p>
               </div>
               <span class="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-700">

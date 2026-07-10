@@ -9,6 +9,7 @@ import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
 import SocialSignInButtons from '@/features/auth/components/SocialSignInButtons.vue'
 import { useAuthStore } from '@/features/auth/store'
+import { getPostAuthRoute } from '@/features/auth/utils'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -32,12 +33,12 @@ async function handleSubmit() {
   if (!validatePasswords()) return
   await authStore.register(email.value, password.value)
   if (authStore.user) {
-    router.push({ name: 'OnboardingVisaType' })
+    router.push(getPostAuthRoute())
   }
 }
 
 function handleSocialSuccess() {
-  router.push({ name: 'OnboardingVisaType' })
+  router.push(getPostAuthRoute())
 }
 </script>
 

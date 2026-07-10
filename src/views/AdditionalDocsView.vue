@@ -5,7 +5,7 @@ import AdditionalDocsStep from '@/features/onboarding/components/AdditionalDocsS
 const router = useRouter()
 
 function goNext() {
-  router.push({ name: 'OnboardingDestination' })
+  router.push({ name: 'OnboardingPassportCountry' })
 }
 
 function goBack() {

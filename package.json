@@ -13,6 +13,8 @@
     "firebase:deploy": "npm run build && firebase deploy",
     "firebase:deploy:hosting": "npm run build && firebase deploy --only hosting",
     "firebase:deploy:rules": "firebase deploy --only firestore:rules,storage:rules",
+    "firebase:deploy:firestore-rules": "firebase deploy --only firestore:rules",
+    "firebase:deploy:storage-rules": "firebase deploy --only storage:rules",
     "firebase:deploy:indexes": "firebase deploy --only firestore:indexes"
   },
   "dependencies": {

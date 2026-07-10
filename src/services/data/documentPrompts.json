@@ -1,0 +1,42 @@
+{
+  "passport": {
+    "title": "Passport scan",
+    "bullets": [
+      "Capture the full photo page with all four corners visible",
+      "Avoid glare, shadows, and blurry text",
+      "Ensure your passport is valid for at least 6 months"
+    ]
+  },
+  "photo": {
+    "title": "Passport photo",
+    "bullets": [
+      "Use a recent photo on a plain white background",
+      "Face the camera directly with eyes open",
+      "No hats, sunglasses, or heavy filters"
+    ]
+  },
+  "itinerary": {
+    "title": "Travel itinerary",
+    "bullets": [
+      "Include flight bookings and accommodation details",
+      "PDF or clear screenshot is accepted",
+      "Dates should match your planned travel"
+    ]
+  },
+  "invitation": {
+    "title": "Invitation letter",
+    "bullets": [
+      "Upload a signed letter from your host or business partner",
+      "Include contact details and travel dates",
+      "PDF format is preferred"
+    ]
+  },
+  "default": {
+    "title": "Document upload",
+    "bullets": [
+      "Upload a clear JPG, PNG, or PDF file",
+      "Maximum file size is 10MB",
+      "Make sure all text is readable"
+    ]
+  }
+}

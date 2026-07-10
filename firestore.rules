@@ -22,7 +22,7 @@ service cloud.firestore {
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == resource.data.userId;
-      allow delete: if false;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /interviews/{interviewId} {
@@ -31,7 +31,7 @@ service cloud.firestore {
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == resource.data.userId;
-      allow delete: if false;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }

@@ -15,6 +15,7 @@ export type VisaApplicationStatus = 'pending' | 'approved' | 'rejected' | 'submi
 export interface OnboardingData {
   visaType: VisaType | null
   passportType: PassportType | null
+  passportCountry: string | null
   hasAdditionalDocs: boolean | null
   destinationCountry: string | null
 }
@@ -31,6 +32,7 @@ export interface UploadedDocument {
   name: string
   url: string
   uploadedAt: string
+  documentTypeId?: string
 }
 
 export interface FeeBreakdown {
@@ -52,6 +54,7 @@ export interface VisaApplication {
 
 export interface Interview {
   id: string
+  userId?: string
   applicationId: string
   scheduledAt: string
   location: string

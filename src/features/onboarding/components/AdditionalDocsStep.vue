@@ -38,7 +38,7 @@ function handleNext() {
 <template>
   <OnboardingLayout
     :current-step="3"
-    :total-steps="4"
+    :total-steps="5"
     title="Do you have additional documents?"
     @back="emit('back')"
   >

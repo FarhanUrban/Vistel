@@ -4,6 +4,8 @@ import type { User } from '@/types'
 import type { SocialAuthProvider } from '@/features/auth/types'
 import * as authService from '@/services/authService'
 import { formatAuthError } from '@/services/authErrors'
+import { useOnboardingStore } from '@/features/onboarding/store'
+import { useDocumentsStore } from '@/features/documents/store'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -64,6 +66,23 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function deleteAccount(password?: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await authService.deleteAccount(password)
+      useOnboardingStore().reset()
+      useDocumentsStore().reset()
+      localStorage.removeItem('vislet_mock_user')
+      user.value = null
+    } catch (e) {
+      error.value = formatAuthError(e)
+      throw e
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function loadCurrentUser() {
     isLoading.value = true
     try {
@@ -75,5 +94,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, isLoading, error, login, register, loginWithProvider, loginWithGoogle, logout, loadCurrentUser }
+  return {
+    user,
+    isLoading,
+    error,
+    login,
+    register,
+    loginWithProvider,
+    loginWithGoogle,
+    logout,
+    deleteAccount,
+    loadCurrentUser,
+  }
 })

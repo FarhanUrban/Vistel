@@ -46,3 +46,21 @@ export function useMockServices(): boolean {
 
   return true
 }
+
+export type DocumentStorageBackend = 'local' | 'firebase'
+
+/**
+ * Document file storage backend. Defaults to `local` (IndexedDB, free).
+ * Set VITE_DOCUMENT_STORAGE=firebase when Firebase Storage is enabled on a paid plan.
+ */
+export function getDocumentStorageBackend(): DocumentStorageBackend {
+  if (useMockServices()) return 'local'
+
+  const value = import.meta.env.VITE_DOCUMENT_STORAGE?.trim().toLowerCase()
+  if (value === 'firebase') return 'firebase'
+  return 'local'
+}
+
+export function useFirebaseDocumentStorage(): boolean {
+  return !useMockServices() && getDocumentStorageBackend() === 'firebase'
+}
