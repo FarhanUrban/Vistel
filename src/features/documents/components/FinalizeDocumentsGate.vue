@@ -82,7 +82,7 @@ function closeGate() {
 
 <template>
   <AppModal :open="open && step === 'ask'" title="Additional documents" @close="closeGate">
-    <p class="mb-4 text-sm text-gray-500">Do you have additional documents to include before submitting?</p>
+    <p class="mb-4 text-sm text-navy/60">Do you have additional documents to include before submitting?</p>
     <AppOptionList v-model="selected" :options="options" />
     <AppButton
       class="mt-6"
@@ -96,7 +96,7 @@ function closeGate() {
   </AppModal>
 
   <AppModal :open="open && step === 'upload'" title="Upload additional documents" @close="closeGate">
-    <p class="mb-4 text-sm text-gray-500">
+    <p class="mb-4 text-sm text-navy/60">
       Add any supporting documents, then finalize your application.
     </p>
     <p v-if="additionalUploaded" class="mb-4 text-sm font-medium text-accent-blue">

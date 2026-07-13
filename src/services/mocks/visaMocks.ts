@@ -1,4 +1,7 @@
 import type { VisaApplication, VisaApplicationStatus } from '@/types'
+import { visaExpiryFromPaidAt } from '@/services/localDocumentStorage'
+
+const paidAtCompleted = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString()
 
 const mockApplications: VisaApplication[] = [
   {
@@ -25,7 +28,8 @@ const mockApplications: VisaApplication[] = [
     destinationCountry: 'KE',
     visaType: 'e-visa',
     submittedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    paidAt: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString(),
+    paidAt: paidAtCompleted,
+    expiresAt: visaExpiryFromPaidAt(paidAtCompleted, 'e-visa'),
   },
 ]
 

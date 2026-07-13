@@ -10,7 +10,7 @@ withDefaults(defineProps<Props>(), {
 
 <template>
   <div
-    class="bg-white rounded-card shadow-sm border border-gray-100"
+    class="rounded-card border border-muted bg-white shadow-sm"
     :class="{
       'p-4': padding === 'sm',
       'p-6': padding === 'md',

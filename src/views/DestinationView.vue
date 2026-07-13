@@ -5,7 +5,7 @@ import DestinationStep from '@/features/onboarding/components/DestinationStep.vu
 const router = useRouter()
 
 function goNext() {
-  router.push({ name: 'DocumentScan' })
+  router.push({ name: 'RequiredDocuments' })
 }
 
 function goBack() {

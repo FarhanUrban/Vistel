@@ -27,22 +27,27 @@ const destination = computed(() => onboardingStore.destinationCountry)
 
 const countryOptions = computed(() => {
   const seen = new Set<string>()
-  const options: { iso2: string; label: string; visaType?: string }[] = []
+  const options: { key: string; iso2: string; label: string; visaType?: string }[] = []
 
-  if (onboardingStore.destinationCountry && onboardingStore.hasVisaSelection()) {
-    const iso2 = onboardingStore.destinationCountry
-    seen.add(iso2)
+  for (const draft of onboardingStore.incompleteDrafts) {
+    if (!draft.destinationCountry || !draft.visaType) continue
+    const key = `${draft.destinationCountry}:${draft.visaType}`
+    if (seen.has(key)) continue
+    seen.add(key)
     options.push({
-      iso2,
-      label: getCountryName(iso2),
-      visaType: onboardingStore.visaType ?? undefined,
+      key,
+      iso2: draft.destinationCountry,
+      label: getCountryName(draft.destinationCountry),
+      visaType: draft.visaType,
     })
   }
 
   for (const app of dashboardStore.applications) {
-    if (seen.has(app.destinationCountry)) continue
-    seen.add(app.destinationCountry)
+    const key = `${app.destinationCountry}:${app.visaType}`
+    if (seen.has(key)) continue
+    seen.add(key)
     options.push({
+      key,
       iso2: app.destinationCountry,
       label: getCountryName(app.destinationCountry),
       visaType: app.visaType,
@@ -78,11 +83,11 @@ function onBannerError() {
   }
 }
 
-async function selectCountry(iso2: string) {
-  const app = dashboardStore.applications.find((a) => a.destinationCountry === iso2)
-  onboardingStore.setDestinationCountry(iso2)
-  if (app?.visaType) {
-    onboardingStore.setVisaType(app.visaType)
+async function selectCountry(iso2: string, visaType?: string) {
+  if (visaType) {
+    onboardingStore.activateContext(iso2, visaType as import('@/types').VisaType)
+  } else {
+    onboardingStore.setDestinationCountry(iso2)
   }
   showSwitcher.value = false
   refreshBanner()
@@ -133,21 +138,21 @@ async function selectCountry(iso2: string) {
 
     <AppModal :open="showSwitcher" title="Select country" @close="showSwitcher = false">
       <ul class="space-y-2">
-        <li v-for="option in countryOptions" :key="option.iso2">
+        <li v-for="option in countryOptions" :key="option.key">
           <button
             type="button"
             class="flex w-full items-center gap-3 rounded-control border border-muted px-3 py-2.5 text-left transition-colors"
             :class="
-              option.iso2 === destination
-                ? 'border-accent-blue bg-accent-blue/10'
+              option.iso2 === destination && option.visaType === onboardingStore.visaType
+                ? 'border-accent-orange bg-accent-orange/15'
                 : 'bg-white hover:border-accent-blue/40'
             "
-            @click="selectCountry(option.iso2)"
+            @click="selectCountry(option.iso2, option.visaType)"
           >
             <CountryFlag :iso2="option.iso2" />
             <div>
               <p class="font-medium text-navy">{{ option.label }}</p>
-              <p v-if="option.visaType" class="text-xs capitalize text-gray-500">
+              <p v-if="option.visaType" class="text-xs capitalize text-navy/50">
                 {{ option.visaType.replace('-', ' ') }} visa
               </p>
             </div>

@@ -14,9 +14,18 @@ export const useDocumentsStore = defineStore('documents', () => {
   const isSubmitted = ref(false)
   const lastApplicationId = ref<string | null>(null)
 
-  async function loadRequiredDocuments() {
+  function currentScope() {
     const onboarding = useOnboardingStore()
-    if (!onboarding.visaType || !onboarding.destinationCountry) {
+    if (!onboarding.visaType || !onboarding.destinationCountry) return null
+    return {
+      destinationCountry: onboarding.destinationCountry,
+      visaType: onboarding.visaType,
+    }
+  }
+
+  async function loadRequiredDocuments() {
+    const scope = currentScope()
+    if (!scope) {
       error.value = 'Please complete onboarding first'
       return
     }
@@ -26,11 +35,10 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const auth = useAuthStore()
       const [required, uploaded] = await Promise.all([
-        documentsService.getRequiredDocuments(
-          onboarding.destinationCountry,
-          onboarding.visaType,
-        ),
-        auth.user?.id ? documentsService.getUserDocuments(auth.user.id) : Promise.resolve([]),
+        documentsService.getRequiredDocuments(scope.destinationCountry, scope.visaType),
+        auth.user?.id
+          ? documentsService.getUserDocuments(auth.user.id, scope)
+          : Promise.resolve([]),
       ])
       requiredDocuments.value = required
       uploadedDocuments.value = uploaded
@@ -41,17 +49,31 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  async function uploadDocument(file: File, documentTypeId?: string) {
+  async function uploadDocument(file: File, documentTypeId: string) {
     const auth = useAuthStore()
+    const scope = currentScope()
     if (!auth.user?.id) {
       error.value = 'You must be logged in to upload documents'
+      return
+    }
+    if (!scope) {
+      error.value = 'Please complete onboarding first'
+      return
+    }
+    if (!documentTypeId) {
+      error.value = 'Select a document type before uploading'
       return
     }
 
     isLoading.value = true
     error.value = null
     try {
-      const uploaded = await documentsService.uploadDocument(file, auth.user.id, documentTypeId)
+      const uploaded = await documentsService.uploadDocument(
+        file,
+        auth.user.id,
+        documentTypeId,
+        scope,
+      )
       uploadedDocuments.value = [
         ...uploadedDocuments.value.filter((doc) => doc.documentTypeId !== documentTypeId),
         uploaded,
@@ -70,12 +92,13 @@ export const useDocumentsStore = defineStore('documents', () => {
   async function submitApplication() {
     const auth = useAuthStore()
     const onboarding = useOnboardingStore()
+    const scope = currentScope()
 
     if (!auth.user?.id) {
       error.value = 'You must be logged in to submit an application'
       return
     }
-    if (!onboarding.visaType || !onboarding.destinationCountry) {
+    if (!scope || !onboarding.visaType || !onboarding.destinationCountry) {
       error.value = 'Please complete onboarding first'
       return
     }
@@ -95,6 +118,7 @@ export const useDocumentsStore = defineStore('documents', () => {
       })
       lastApplicationId.value = applicationId
       isSubmitted.value = true
+      onboarding.removeDraft(onboarding.destinationCountry, onboarding.visaType)
       return applicationId
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Submission failed'
@@ -105,6 +129,7 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   function allRequiredUploaded(): boolean {
     const required = requiredDocuments.value.filter((d) => d.required)
+    if (required.length === 0) return false
     return required.every((req) => isDocumentUploaded(req.id))
   }
 
@@ -120,6 +145,7 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   function resetForNewApplication() {
     uploadedDocuments.value = []
+    requiredDocuments.value = []
     isSubmitted.value = false
     lastApplicationId.value = null
     error.value = null

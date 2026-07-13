@@ -38,10 +38,17 @@ function handleSocialSuccess() {
 <template>
   <AuthLayout>
     <AppCard>
-      <div class="text-center mb-6">
+      <div class="mb-6 text-center">
+        <button
+          type="button"
+          class="mb-4 text-sm font-medium text-accent-blue hover:underline"
+          @click="router.push({ name: 'Welcome' })"
+        >
+          ← Back
+        </button>
         <AppLogo />
-        <h1 class="text-2xl font-semibold text-navy mt-4">Welcome back</h1>
-        <p class="text-gray-500 mt-1">Log in to continue your visa application</p>
+        <h1 class="mt-4 text-2xl font-semibold text-navy">Welcome back</h1>
+        <p class="mt-1 text-navy/60">Log in to continue your visa application</p>
       </div>
 
       <AppErrorMessage v-if="authStore.error" :message="authStore.error" class="mb-4" />
@@ -54,9 +61,9 @@ function handleSocialSuccess() {
 
       <SocialSignInButtons @success="handleSocialSuccess" />
 
-      <p class="text-center text-sm text-gray-500 mt-6">
+      <p class="mt-6 text-center text-sm text-navy/60">
         Don't have an account?
-        <RouterLink to="/signup" class="text-accent-blue font-medium">Sign up</RouterLink>
+        <RouterLink to="/signup" class="font-medium text-accent-blue">Sign up</RouterLink>
       </p>
     </AppCard>
   </AuthLayout>

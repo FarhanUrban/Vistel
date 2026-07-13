@@ -4,12 +4,7 @@ import type { User } from '@/types'
 import type { SocialAuthProvider } from '@/features/auth/types'
 import * as authService from '@/services/authService'
 import { formatAuthError } from '@/services/authErrors'
-<<<<<<< Updated upstream
-import { useOnboardingStore } from '@/features/onboarding/store'
-import { useDocumentsStore } from '@/features/documents/store'
-=======
 import { wipeAllAppData } from '@/services/appReset'
->>>>>>> Stashed changes
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -75,11 +70,6 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       await authService.deleteAccount(password)
-<<<<<<< Updated upstream
-      useOnboardingStore().reset()
-      useDocumentsStore().reset()
-      localStorage.removeItem('vislet_mock_user')
-=======
       wipeAllAppData()
       user.value = null
     } catch (e) {
@@ -97,7 +87,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       wipeAllAppData()
       await authService.signOut()
->>>>>>> Stashed changes
       user.value = null
     } catch (e) {
       error.value = formatAuthError(e)
@@ -128,6 +117,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithGoogle,
     logout,
     deleteAccount,
+    resetAppData,
     loadCurrentUser,
   }
 })

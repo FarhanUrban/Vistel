@@ -5,6 +5,11 @@ import * as visaService from '@/services/visaService'
 import * as interviewsService from '@/services/interviewsService'
 import { useAuthStore } from '@/features/auth/store'
 
+function isExpired(app: VisaApplication): boolean {
+  if (!app.expiresAt) return false
+  return new Date(app.expiresAt).getTime() < Date.now()
+}
+
 export const useDashboardStore = defineStore('dashboard', () => {
   const applications = ref<VisaApplication[]>([])
   const interviews = ref<Interview[]>([])
@@ -16,11 +21,13 @@ export const useDashboardStore = defineStore('dashboard', () => {
   )
 
   const awaitingPaymentApplications = computed(() =>
-    applications.value.filter((a) => a.status === 'awaiting_payment'),
+    applications.value.filter(
+      (a) => a.status === 'awaiting_payment' || a.status === 'payment_processing',
+    ),
   )
 
   const completedApplications = computed(() =>
-    applications.value.filter((a) => a.status === 'completed'),
+    applications.value.filter((a) => a.status === 'completed' && !isExpired(a)),
   )
 
   const rejectedApplications = computed(() =>
@@ -59,7 +66,6 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
-  /** Scaffold for a future “Schedule interview” CTA. */
   async function scheduleInterview(interview: Omit<Interview, 'id'>) {
     const auth = useAuthStore()
     if (!auth.user?.id) {

@@ -4,13 +4,13 @@ import { useMockServices, useFirebaseDocumentStorage } from './config'
 import { getFirebaseStorage } from './api'
 import { iso2ToLegacySlug } from './visaIndexService'
 import {
+  type DocumentScope,
   getStoredDocuments,
   pretendUploadDocument,
   saveLocalApplication,
 } from './localDocumentStorage'
 import {
   mockGetRequiredDocuments,
-  mockUploadDocument,
   mockSubmitApplication,
 } from './mocks/documentsMocks'
 import requiredDocsData from './data/requiredDocuments.json'
@@ -40,9 +40,12 @@ function formatStorageError(error: unknown): string {
   return message || 'Upload failed'
 }
 
-export async function getUserDocuments(userId: string): Promise<UploadedDocument[]> {
-  if (useMockServices()) return []
-  return getStoredDocuments(userId)
+export async function getUserDocuments(
+  userId: string,
+  scope?: DocumentScope,
+): Promise<UploadedDocument[]> {
+  // Always prefer scoped local storage (mock + local backend)
+  return getStoredDocuments(userId, scope)
 }
 
 export async function getRequiredDocuments(
@@ -52,7 +55,10 @@ export async function getRequiredDocuments(
   if (useMockServices()) {
     return mockGetRequiredDocuments(destinationCountry, visaType)
   }
-  const legacySlug = destinationCountry.length === 2 ? iso2ToLegacySlug(destinationCountry) : destinationCountry.toLowerCase()
+  const legacySlug =
+    destinationCountry.length === 2
+      ? iso2ToLegacySlug(destinationCountry)
+      : destinationCountry.toLowerCase()
   const key = `${legacySlug}_${visaType}`
   const docs = (requiredDocsData as Record<string, RequiredDocument[]>)[key]
   if (docs) return docs
@@ -62,31 +68,39 @@ export async function getRequiredDocuments(
 export async function uploadDocument(
   file: File,
   userId: string,
-  documentTypeId?: string,
+  documentTypeId: string,
+  scope: DocumentScope,
 ): Promise<UploadedDocument> {
+  if (!documentTypeId) {
+    throw new Error('Document type is required')
+  }
+
   if (useMockServices()) {
-    const uploaded = await mockUploadDocument(file)
-    return { ...uploaded, documentTypeId }
+    const uploaded = await pretendUploadDocument(file, userId, documentTypeId, scope)
+    return uploaded
   }
 
   if (!useFirebaseDocumentStorage()) {
-    return pretendUploadDocument(file, userId, documentTypeId)
+    return pretendUploadDocument(file, userId, documentTypeId, scope)
   }
 
   const storage = getFirebaseStorage()
-  const prefix = documentTypeId ? `${documentTypeId}_` : ''
   const safeName = sanitizeStorageFileName(file.name)
-  const path = `users/${userId}/documents/${prefix}${Date.now()}_${safeName}`
+  const path = `users/${userId}/documents/${scope.destinationCountry}_${scope.visaType}_${documentTypeId}_${Date.now()}_${safeName}`
   const ref = storageRef(storage, path)
   try {
     await uploadBytes(ref, file)
     const url = await getDownloadURL(ref)
+    // Also mirror locally for UI status while using cloud storage
+    await pretendUploadDocument(file, userId, documentTypeId, scope)
     return {
       id: path,
       name: file.name,
       url,
       uploadedAt: new Date().toISOString(),
       documentTypeId,
+      destinationCountry: scope.destinationCountry,
+      visaType: scope.visaType,
     }
   } catch (error) {
     throw new Error(formatStorageError(error))

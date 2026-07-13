@@ -59,9 +59,7 @@ const router = createRouter({
     },
     {
       path: '/documents/scan',
-      name: 'DocumentScan',
-      component: () => import('@/views/DocumentScanView.vue'),
-      meta: { title: 'Scan Documents', requiresAuth: true },
+      redirect: { name: 'RequiredDocuments' },
     },
     {
       path: '/documents/required-list',

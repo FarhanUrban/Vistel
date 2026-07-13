@@ -21,16 +21,16 @@ function select(value: string) {
       v-for="option in options"
       :key="option.value"
       type="button"
-      class="w-full text-left p-4 rounded-card border-2 transition-colors"
+      class="w-full rounded-card border-2 p-4 text-left transition-colors"
       :class="
         modelValue === option.value
-          ? 'border-accent-blue bg-accent-blue/10'
-          : 'border-gray-200 bg-white hover:border-gray-300'
+          ? 'border-accent-blue bg-accent-blue/15'
+          : 'border-muted bg-white hover:border-accent-blue/50'
       "
       @click="select(option.value)"
     >
       <p class="font-medium text-navy">{{ option.label }}</p>
-      <p v-if="option.description" class="text-sm text-gray-500 mt-1">
+      <p v-if="option.description" class="mt-1 text-sm text-navy/60">
         {{ option.description }}
       </p>
     </button>

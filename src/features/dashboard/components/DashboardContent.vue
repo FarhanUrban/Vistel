@@ -12,7 +12,7 @@ import { useDashboardStore } from '@/features/dashboard/store'
 import { useOnboardingStore } from '@/features/onboarding/store'
 import { useDocumentsStore } from '@/features/documents/store'
 import { getCountryName } from '@/services/visaIndexService'
-import type { Interview, VisaApplication, VisaType } from '@/types'
+import type { Interview, OnboardingDraft, VisaApplication, VisaType } from '@/types'
 
 const router = useRouter()
 const dashboardStore = useDashboardStore()
@@ -21,21 +21,17 @@ const documentsStore = useDocumentsStore()
 
 const selectedCompleted = ref<VisaApplication | null>(null)
 
-const inProgressVisa = computed(() => {
-  if (!onboardingStore.hasVisaSelection()) return null
-
-  const hasMatchingApplication = dashboardStore.applications.some(
-    (app) =>
-      app.destinationCountry === onboardingStore.destinationCountry &&
-      app.visaType === onboardingStore.visaType &&
-      app.status !== 'rejected',
-  )
-  if (hasMatchingApplication) return null
-
-  return {
-    destinationCountry: onboardingStore.destinationCountry!,
-    visaType: onboardingStore.visaType!,
-  }
+const workingOnDrafts = computed(() => {
+  return onboardingStore.incompleteDrafts.filter((draft) => {
+    if (!draft.destinationCountry || !draft.visaType) return false
+    const hasMatchingApplication = dashboardStore.applications.some(
+      (app) =>
+        app.destinationCountry === draft.destinationCountry &&
+        app.visaType === draft.visaType &&
+        app.status !== 'rejected',
+    )
+    return !hasMatchingApplication
+  })
 })
 
 onMounted(() => {
@@ -65,20 +61,24 @@ function formatVisaType(visaType: string): string {
 }
 
 function startNewVisa() {
-  onboardingStore.reset()
+  onboardingStore.startNewVisa()
   documentsStore.resetForNewApplication()
   router.push({ name: 'OnboardingVisaType' })
 }
 
 function openDocumentsForCountry(destinationCountry: string, visaType?: VisaType | string | null) {
-  onboardingStore.setDestinationCountry(destinationCountry)
   if (visaType) {
-    onboardingStore.setVisaType(visaType as VisaType)
+    onboardingStore.activateContext(destinationCountry, visaType as VisaType)
+  } else {
+    onboardingStore.setDestinationCountry(destinationCountry)
   }
   router.push({ name: 'RequiredDocuments' })
 }
 
-function continueApplication() {
+function continueDraft(draft: OnboardingDraft) {
+  if (draft.visaType && draft.destinationCountry) {
+    onboardingStore.activateContext(draft.destinationCountry, draft.visaType)
+  }
   if (onboardingStore.isComplete()) {
     router.push({ name: 'RequiredDocuments' })
     return
@@ -113,34 +113,40 @@ function openInterview(interview: Interview) {
   <div>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <h1 class="text-2xl font-semibold text-navy lg:text-3xl">Dashboard</h1>
-      <AppButton @click="startNewVisa">Apply for new visa</AppButton>
+      <AppButton variant="secondary" @click="startNewVisa">Apply for new visa</AppButton>
     </div>
 
     <AppErrorMessage v-if="dashboardStore.error" :message="dashboardStore.error" class="mb-4" />
     <AppLoadingSpinner v-if="dashboardStore.isLoading" />
 
     <template v-else>
-      <section v-if="inProgressVisa" class="mb-8">
+      <section v-if="workingOnDrafts.length > 0" class="mb-8">
         <h2 class="mb-3 text-lg font-medium text-navy">Working on</h2>
-        <AppCard
-          padding="sm"
-          class="cursor-pointer transition-colors hover:border-accent-blue/40"
-          @click="continueApplication"
-        >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 items-start gap-3">
-              <CountryFlag :iso2="inProgressVisa.destinationCountry" />
-              <div>
-                <p class="font-medium text-navy">{{ getCountryName(inProgressVisa.destinationCountry) }}</p>
-                <p class="text-sm capitalize text-gray-500">{{ formatVisaType(inProgressVisa.visaType) }} visa</p>
+        <div class="space-y-3">
+          <AppCard
+            v-for="draft in workingOnDrafts"
+            :key="draft.id"
+            padding="sm"
+            class="cursor-pointer transition-colors hover:border-accent-orange/60"
+            @click="continueDraft(draft)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 items-start gap-3">
+                <CountryFlag :iso2="draft.destinationCountry!" />
+                <div>
+                  <p class="font-medium text-navy">{{ getCountryName(draft.destinationCountry!) }}</p>
+                  <p class="text-sm capitalize text-navy/60">
+                    {{ formatVisaType(draft.visaType!) }} visa
+                  </p>
+                </div>
               </div>
+              <span class="shrink-0 rounded bg-accent-orange/25 px-2 py-1 text-xs font-medium text-navy">
+                In progress
+              </span>
             </div>
-            <span class="shrink-0 rounded bg-accent-blue/15 px-2 py-1 text-xs font-medium text-navy">
-              In progress
-            </span>
-          </div>
-          <p class="mt-2 text-xs text-accent-blue">Continue application →</p>
-        </AppCard>
+            <p class="mt-2 text-xs font-medium text-accent-blue">Continue application →</p>
+          </AppCard>
+        </div>
       </section>
 
       <section v-if="dashboardStore.reviewingApplications.length > 0" class="mb-8">
@@ -150,7 +156,7 @@ function openInterview(interview: Interview) {
             v-for="app in dashboardStore.reviewingApplications"
             :key="app.id"
             padding="sm"
-            class="cursor-pointer transition-colors hover:border-accent-blue/40"
+            class="cursor-pointer transition-colors hover:border-accent-blue/50"
             @click="openDocumentsForCountry(app.destinationCountry, app.visaType)"
           >
             <div class="flex items-start justify-between gap-3">
@@ -158,12 +164,12 @@ function openInterview(interview: Interview) {
                 <CountryFlag :iso2="app.destinationCountry" />
                 <div>
                   <p class="font-medium text-navy">{{ getCountryName(app.destinationCountry) }}</p>
-                  <p class="text-sm capitalize text-gray-500">{{ app.visaType.replace('-', ' ') }}</p>
+                  <p class="text-sm capitalize text-navy/60">{{ formatVisaType(app.visaType) }}</p>
                 </div>
               </div>
               <ApplicationStatusBadge :status="app.status" />
             </div>
-            <p class="mt-2 text-xs text-gray-400">Submitted {{ formatDate(app.submittedAt) }}</p>
+            <p class="mt-2 text-xs text-navy/40">Submitted {{ formatDate(app.submittedAt) }}</p>
           </AppCard>
         </div>
       </section>
@@ -175,7 +181,7 @@ function openInterview(interview: Interview) {
             v-for="app in dashboardStore.awaitingPaymentApplications"
             :key="app.id"
             padding="sm"
-            class="cursor-pointer transition-colors hover:border-accent-blue/40"
+            class="cursor-pointer transition-colors hover:border-accent-orange/50"
             @click="goToPayment(app.id)"
           >
             <div class="flex items-start justify-between gap-3">
@@ -183,12 +189,16 @@ function openInterview(interview: Interview) {
                 <CountryFlag :iso2="app.destinationCountry" />
                 <div>
                   <p class="font-medium text-navy">{{ getCountryName(app.destinationCountry) }}</p>
-                  <p class="text-sm capitalize text-gray-500">{{ app.visaType.replace('-', ' ') }}</p>
+                  <p class="text-sm capitalize text-navy/60">{{ formatVisaType(app.visaType) }}</p>
                 </div>
               </div>
               <ApplicationStatusBadge :status="app.status" />
             </div>
-            <p class="mt-2 text-xs text-accent-blue">Tap to pay →</p>
+            <p class="mt-2 text-xs font-medium text-accent-blue">
+              {{
+                app.status === 'payment_processing' ? 'Payment processing…' : 'Tap to pay →'
+              }}
+            </p>
           </AppCard>
         </div>
       </section>
@@ -217,17 +227,17 @@ function openInterview(interview: Interview) {
                         : interview.location
                     }}
                   </p>
-                  <p class="mt-0.5 text-sm text-gray-500">{{ interview.location }}</p>
-                  <p class="mt-1 text-sm text-gray-500">{{ formatDateTime(interview.scheduledAt) }}</p>
-                  <p v-if="interview.notes" class="mt-2 text-xs text-gray-500">{{ interview.notes }}</p>
+                  <p class="mt-0.5 text-sm text-navy/60">{{ interview.location }}</p>
+                  <p class="mt-1 text-sm text-navy/60">{{ formatDateTime(interview.scheduledAt) }}</p>
+                  <p v-if="interview.notes" class="mt-2 text-xs text-navy/50">{{ interview.notes }}</p>
                 </div>
               </div>
               <span
                 class="shrink-0 rounded px-2 py-1 text-xs font-medium"
                 :class="
                   interview.scheduledBy === 'consulate'
-                    ? 'bg-accent-orange/20 text-navy'
-                    : 'bg-accent-blue/15 text-navy'
+                    ? 'bg-accent-orange/25 text-navy'
+                    : 'bg-accent-blue/20 text-navy'
                 "
               >
                 {{ interview.scheduledBy === 'consulate' ? 'Consulate' : 'You' }}
@@ -235,8 +245,8 @@ function openInterview(interview: Interview) {
             </div>
           </AppCard>
         </div>
-        <AppCard v-else padding="sm" class="border-dashed">
-          <p class="text-sm text-gray-500">
+        <AppCard v-else padding="sm" class="border-dashed border-muted">
+          <p class="text-sm text-navy/60">
             No upcoming interviews yet. When a consulate schedules one—or you add your own—it will show up here.
           </p>
         </AppCard>
@@ -249,7 +259,7 @@ function openInterview(interview: Interview) {
             v-for="app in dashboardStore.completedApplications"
             :key="app.id"
             padding="sm"
-            class="cursor-pointer transition-colors hover:border-green-200"
+            class="cursor-pointer transition-colors hover:border-accent-blue/40"
             @click="showCompletedDetail(app)"
           >
             <div class="flex items-start justify-between gap-3">
@@ -257,12 +267,15 @@ function openInterview(interview: Interview) {
                 <CountryFlag :iso2="app.destinationCountry" />
                 <div>
                   <p class="font-medium text-navy">{{ getCountryName(app.destinationCountry) }}</p>
-                  <p class="text-sm capitalize text-gray-500">{{ app.visaType.replace('-', ' ') }}</p>
+                  <p class="text-sm capitalize text-navy/60">{{ formatVisaType(app.visaType) }}</p>
                 </div>
               </div>
               <ApplicationStatusBadge :status="app.status" />
             </div>
-            <p v-if="app.paidAt" class="mt-2 text-xs text-gray-400">
+            <p v-if="app.expiresAt" class="mt-2 text-xs font-medium text-accent-blue">
+              Valid until {{ formatDate(app.expiresAt) }}
+            </p>
+            <p v-else-if="app.paidAt" class="mt-2 text-xs text-navy/40">
               Paid {{ formatDate(app.paidAt) }}
             </p>
           </AppCard>
@@ -288,14 +301,17 @@ function openInterview(interview: Interview) {
             {{ getCountryName(selectedCompleted.destinationCountry) }}
           </p>
         </div>
-        <p class="mb-4 text-sm capitalize text-gray-500">
-          {{ selectedCompleted.visaType.replace('-', ' ') }} visa
+        <p class="mb-4 text-sm capitalize text-navy/60">
+          {{ formatVisaType(selectedCompleted.visaType) }} visa
         </p>
         <ApplicationStatusBadge :status="selectedCompleted.status" />
-        <p v-if="selectedCompleted.paidAt" class="mt-4 text-sm text-gray-500">
+        <p v-if="selectedCompleted.expiresAt" class="mt-4 text-sm font-medium text-accent-blue">
+          Valid until {{ formatDate(selectedCompleted.expiresAt) }}
+        </p>
+        <p v-if="selectedCompleted.paidAt" class="mt-2 text-sm text-navy/60">
           Paid on {{ formatDate(selectedCompleted.paidAt) }}
         </p>
-        <p class="mt-2 text-sm text-gray-500">
+        <p class="mt-2 text-sm text-navy/60">
           Submitted {{ formatDate(selectedCompleted.submittedAt) }}
         </p>
       </template>

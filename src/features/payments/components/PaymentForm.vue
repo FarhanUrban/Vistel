@@ -41,6 +41,8 @@ const showApplicationPicker = computed(
   () => awaitingPaymentApps.value.length > 1 && !selectedApplicationId.value,
 )
 
+const isProcessing = computed(() => paymentsStore.status === 'processing')
+
 async function loadAwaitingPaymentApps() {
   if (!authStore.user?.id) {
     awaitingPaymentApps.value = []
@@ -50,7 +52,9 @@ async function loadAwaitingPaymentApps() {
   loadingApps.value = true
   try {
     const apps = await visaService.getApplications(authStore.user.id)
-    awaitingPaymentApps.value = apps.filter((app) => app.status === 'awaiting_payment')
+    awaitingPaymentApps.value = apps.filter(
+      (app) => app.status === 'awaiting_payment' || app.status === 'payment_processing',
+    )
   } finally {
     loadingApps.value = false
   }
@@ -93,60 +97,72 @@ async function handlePay() {
 
 <template>
   <div>
-    <h1 class="text-2xl font-semibold text-navy mb-2">Payment</h1>
+    <h1 class="mb-2 text-2xl font-semibold text-navy">Payment</h1>
 
     <AppErrorMessage v-if="paymentsStore.error" :message="paymentsStore.error" class="mb-4" />
-    <AppLoadingSpinner v-if="loadingApps || paymentsStore.isLoading" />
+    <AppLoadingSpinner v-if="(loadingApps || paymentsStore.isLoading) && !isProcessing" />
 
-    <template v-else>
-      <p v-if="!selectedApplicationId && awaitingPaymentApps.length === 0" class="text-gray-500 mb-6">
+    <AppCard v-if="isProcessing" class="mb-6 text-center">
+      <div class="flex flex-col items-center py-10">
+        <span
+          class="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-accent-blue border-t-accent-orange"
+        />
+        <p class="text-lg font-semibold text-navy">Processing your payment…</p>
+        <p class="mt-2 max-w-sm text-sm text-navy/60">
+          Please wait while we confirm your payment. Do not close this page.
+        </p>
+      </div>
+    </AppCard>
+
+    <template v-else-if="!loadingApps && !paymentsStore.isLoading">
+      <p v-if="!selectedApplicationId && awaitingPaymentApps.length === 0" class="mb-6 text-navy/60">
         Your cart is empty. Complete document submission and get approved to pay.
       </p>
-      <p v-else-if="showApplicationPicker" class="text-gray-500 mb-6">
+      <p v-else-if="showApplicationPicker" class="mb-6 text-navy/60">
         Select which visa you want to pay for.
       </p>
-      <p v-else-if="paymentsStore.checkoutApplication" class="text-gray-500 mb-6">
+      <p v-else-if="paymentsStore.checkoutApplication" class="mb-6 text-navy/60">
         Review the fee breakdown and select a payment method.
       </p>
 
       <AppCard v-if="!selectedApplicationId && awaitingPaymentApps.length === 0" class="mb-6">
-        <p class="text-sm text-gray-500">
+        <p class="text-sm text-navy/60">
           Once your application is approved on the dashboard, you can pay from there.
         </p>
       </AppCard>
 
       <section v-if="showApplicationPicker" class="mb-6">
-        <h2 class="font-medium text-navy mb-3">Select a visa to pay for</h2>
+        <h2 class="mb-3 font-medium text-navy">Select a visa to pay for</h2>
         <div class="space-y-3">
           <AppCard
             v-for="app in awaitingPaymentApps"
             :key="app.id"
             padding="sm"
-            class="cursor-pointer hover:border-accent-blue/40 transition-colors"
+            class="cursor-pointer transition-colors hover:border-accent-orange/50"
             @click="selectApplication(app.id)"
           >
             <p class="font-medium text-navy">{{ getCountryName(app.destinationCountry) }}</p>
-            <p class="text-sm text-gray-500 capitalize">{{ formatVisaType(app.visaType) }} visa</p>
+            <p class="text-sm capitalize text-navy/60">{{ formatVisaType(app.visaType) }} visa</p>
           </AppCard>
         </div>
       </section>
 
       <AppCard v-else-if="paymentsStore.checkoutApplication" class="mb-6">
-        <h2 class="font-medium text-navy mb-1">You are paying for</h2>
-        <p class="text-xl text-navy mb-1">
+        <h2 class="mb-1 font-medium text-navy">You are paying for</h2>
+        <p class="mb-1 text-xl text-navy">
           {{ getCountryName(paymentsStore.checkoutApplication.destinationCountry) }}
         </p>
-        <p class="text-sm text-gray-500 capitalize mb-4">
+        <p class="mb-4 text-sm capitalize text-navy/60">
           {{ formatVisaType(paymentsStore.checkoutApplication.visaType) }} visa
         </p>
 
         <div
           v-if="awaitingPaymentApps.length > 1"
-          class="mb-4 pb-4 border-b border-gray-200"
+          class="mb-4 border-b border-muted pb-4"
         >
           <button
             type="button"
-            class="text-sm text-accent-blue hover:underline"
+            class="text-sm font-medium text-accent-blue hover:underline"
             @click="router.replace({ name: 'Payment' })"
           >
             Choose a different visa
@@ -154,17 +170,17 @@ async function handlePay() {
         </div>
 
         <template v-if="paymentsStore.feeBreakdown">
-          <h3 class="font-medium text-navy mb-4">Fee breakdown</h3>
+          <h3 class="mb-4 font-medium text-navy">Fee breakdown</h3>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
-              <span class="text-gray-500">Visa fee</span>
+              <span class="text-navy/60">Visa fee</span>
               <span class="text-navy">${{ paymentsStore.feeBreakdown.visaFee.toFixed(2) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500">Service fee</span>
+              <span class="text-navy/60">Service fee</span>
               <span class="text-navy">${{ paymentsStore.feeBreakdown.serviceFee.toFixed(2) }}</span>
             </div>
-            <div class="border-t border-gray-200 pt-2 flex justify-between font-semibold">
+            <div class="flex justify-between border-t border-muted pt-2 font-semibold">
               <span class="text-navy">Total</span>
               <span class="text-navy">${{ paymentsStore.feeBreakdown.total.toFixed(2) }}</span>
             </div>
@@ -173,17 +189,17 @@ async function handlePay() {
       </AppCard>
 
       <template v-if="canPay">
-        <h2 class="font-medium text-navy mb-3">Payment method</h2>
-        <div class="space-y-2 mb-6">
+        <h2 class="mb-3 font-medium text-navy">Payment method</h2>
+        <div class="mb-6 space-y-2">
           <button
             v-for="method in PAYMENT_METHODS"
             :key="method.id"
             type="button"
-            class="w-full flex items-center gap-3 p-4 rounded-card border-2 transition-colors text-left"
+            class="flex w-full items-center gap-3 rounded-card border-2 p-4 text-left transition-colors"
             :class="
               paymentsStore.selectedMethod === method.id
-                ? 'border-accent-blue bg-accent-blue/10'
-                : 'border-gray-200 bg-white'
+                ? 'border-accent-orange bg-accent-orange/15'
+                : 'border-muted bg-white hover:border-accent-blue/40'
             "
             @click="paymentsStore.selectMethod(method.id)"
           >
@@ -192,12 +208,7 @@ async function handlePay() {
           </button>
         </div>
 
-        <AppButton
-          full-width
-          :disabled="!canPay"
-          :loading="paymentsStore.status === 'processing'"
-          @click="handlePay"
-        >
+        <AppButton full-width variant="secondary" :disabled="!canPay" @click="handlePay">
           Pay Now
         </AppButton>
       </template>

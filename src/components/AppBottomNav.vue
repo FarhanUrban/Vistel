@@ -28,7 +28,7 @@ function navigate(path: string) {
         :key="item.path"
         type="button"
         class="flex flex-1 flex-col items-center justify-center py-2 text-xs transition-colors"
-        :class="isActive(item.path) ? 'font-medium text-accent-blue' : 'text-gray-500'"
+        :class="isActive(item.path) ? 'font-medium text-accent-orange' : 'text-navy/50'"
         @click="navigate(item.path)"
       >
         <NavIcon :name="item.icon" class="mb-0.5 h-5 w-5" />

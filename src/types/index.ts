@@ -26,6 +26,16 @@ export interface OnboardingData {
   destinationCountry: string | null
 }
 
+export interface OnboardingDraft {
+  id: string
+  visaType: VisaType | null
+  passportType: PassportType | null
+  passportCountry: string | null
+  hasAdditionalDocs: boolean | null
+  destinationCountry: string | null
+  updatedAt: string
+}
+
 export interface RequiredDocument {
   id: string
   name: string
@@ -39,6 +49,8 @@ export interface UploadedDocument {
   url: string
   uploadedAt: string
   documentTypeId?: string
+  destinationCountry?: string
+  visaType?: VisaType
 }
 
 export interface FeeBreakdown {
@@ -57,6 +69,7 @@ export interface VisaApplication {
   submittedAt: string
   reviewedAt?: string
   paidAt?: string
+  expiresAt?: string
   rejectionCode?: string
   documents?: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[]
 }

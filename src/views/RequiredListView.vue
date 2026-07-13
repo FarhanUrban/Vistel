@@ -7,11 +7,7 @@ import { useDocumentsStore } from '@/features/documents/store'
 const router = useRouter()
 const documentsStore = useDocumentsStore()
 
-function goToScan() {
-  router.push({ name: 'DocumentScan' })
-}
-
-async function goToConfirmation() {
+function goToConfirmation() {
   const applicationId = documentsStore.lastApplicationId
   if (applicationId) {
     router.push({ name: 'DocumentConfirmation', query: { applicationId } })
@@ -21,6 +17,6 @@ async function goToConfirmation() {
 
 <template>
   <AppShell>
-    <RequiredDocumentsList @scan="goToScan" @finalize="goToConfirmation" />
+    <RequiredDocumentsList @finalize="goToConfirmation" />
   </AppShell>
 </template>

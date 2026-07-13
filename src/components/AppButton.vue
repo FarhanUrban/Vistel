@@ -22,16 +22,18 @@ withDefaults(defineProps<Props>(), {
   <button
     :type="type"
     :disabled="disabled || loading"
-    class="inline-flex items-center justify-center font-medium transition-colors rounded-control disabled:opacity-50 disabled:cursor-not-allowed"
+    class="inline-flex items-center justify-center font-medium transition-colors rounded-control disabled:cursor-not-allowed disabled:bg-muted disabled:text-navy/50 disabled:opacity-100"
     :class="[
       fullWidth ? 'w-full' : '',
       size === 'sm' ? 'px-3 py-1.5 text-sm' : '',
       size === 'md' ? 'px-4 py-2.5 text-base' : '',
       size === 'lg' ? 'px-6 py-3 text-lg' : '',
-      variant === 'primary' ? 'bg-black text-white hover:bg-navy' : '',
-      variant === 'secondary' ? 'bg-accent-orange text-black hover:opacity-90' : '',
+      variant === 'primary'
+        ? 'bg-navy text-surface hover:bg-accent-orange hover:text-navy'
+        : '',
+      variant === 'secondary' ? 'bg-accent-orange text-navy hover:brightness-95' : '',
       variant === 'outline'
-        ? 'border-2 border-accent-blue text-accent-blue bg-transparent hover:bg-accent-blue/10'
+        ? 'border-2 border-accent-blue bg-surface text-accent-blue hover:bg-accent-blue/15'
         : '',
     ]"
   >
