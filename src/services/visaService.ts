@@ -1,8 +1,12 @@
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
 import type { VisaApplication, VisaApplicationStatus } from '@/types'
 import { useMockServices, useFirebaseDocumentStorage } from './config'
 import { getFirestoreDb } from './api'
-import { getLocalApplicationById, getLocalApplications } from './localDocumentStorage'
+import {
+  getLocalApplicationById,
+  getLocalApplications,
+  updateLocalApplication,
+} from './localDocumentStorage'
 import {
   mockGetApplications,
   mockGetApplicationStatus,
@@ -17,13 +21,21 @@ function mapApplicationDoc(id: string, data: Record<string, unknown>): VisaAppli
     destinationCountry: data.destinationCountry as string,
     visaType: data.visaType as VisaApplication['visaType'],
     submittedAt: data.submittedAt as string,
+    reviewedAt: data.reviewedAt as string | undefined,
+    paidAt: data.paidAt as string | undefined,
     rejectionCode: data.rejectionCode as string | undefined,
+    documents: data.documents as VisaApplication['documents'],
   }
 }
 
 export async function getApplications(userId: string): Promise<VisaApplication[]> {
   if (useMockServices()) {
-    return mockGetApplications(userId)
+    const local = getLocalApplications(userId)
+    const mocks = await mockGetApplications(userId)
+    const byId = new Map<string, VisaApplication>()
+    for (const app of mocks) byId.set(app.id, app)
+    for (const app of local) byId.set(app.id, app)
+    return [...byId.values()]
   }
   if (!useFirebaseDocumentStorage()) {
     return getLocalApplications(userId)
@@ -35,8 +47,35 @@ export async function getApplications(userId: string): Promise<VisaApplication[]
   return snapshot.docs.map((d) => mapApplicationDoc(d.id, d.data()))
 }
 
+export async function getApplication(applicationId: string): Promise<VisaApplication | null> {
+  if (useMockServices() || !useFirebaseDocumentStorage()) {
+    return getLocalApplicationById(applicationId)
+  }
+  const db = getFirestoreDb()
+  const snapshot = await getDoc(doc(db, 'applications', applicationId))
+  if (!snapshot.exists()) return null
+  return mapApplicationDoc(snapshot.id, snapshot.data())
+}
+
+export async function updateApplication(
+  applicationId: string,
+  patch: Partial<VisaApplication>,
+): Promise<VisaApplication> {
+  if (useMockServices() || !useFirebaseDocumentStorage()) {
+    return updateLocalApplication(applicationId, patch)
+  }
+  const db = getFirestoreDb()
+  const ref = doc(db, 'applications', applicationId)
+  await updateDoc(ref, patch)
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) throw new Error('Application not found')
+  return mapApplicationDoc(snapshot.id, snapshot.data())
+}
+
 export async function getApplicationStatus(applicationId: string): Promise<VisaApplicationStatus> {
   if (useMockServices()) {
+    const local = getLocalApplicationById(applicationId)
+    if (local) return local.status
     return mockGetApplicationStatus(applicationId)
   }
   if (!useFirebaseDocumentStorage()) {
@@ -54,6 +93,8 @@ export async function getApplicationStatus(applicationId: string): Promise<VisaA
 
 export async function pollApplicationStatus(applicationId: string): Promise<VisaApplication | null> {
   if (useMockServices()) {
+    const local = getLocalApplicationById(applicationId)
+    if (local) return local
     return mockPollApplicationStatus(applicationId)
   }
   if (!useFirebaseDocumentStorage()) {

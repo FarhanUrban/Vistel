@@ -28,6 +28,10 @@ function goToLogin() {
         <AppButton full-width @click="goToSignup">Get Started</AppButton>
         <AppButton variant="outline" full-width @click="goToLogin">Log In</AppButton>
       </div>
+      <p class="mt-6 text-xs text-gray-400 leading-relaxed">
+        Your visa applications and documents are stored on this device only. They are not saved to
+        our servers and may be lost if you clear browser data or switch devices.
+      </p>
     </AppCard>
   </AuthLayout>
 </template>

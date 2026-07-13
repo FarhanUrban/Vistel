@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/features/auth/store'
 import { useOnboardingStore } from '@/features/onboarding/store'
 import { useMockServices } from '@/services/config'
+import * as visaService from '@/services/visaService'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -42,9 +43,7 @@ const router = createRouter({
     },
     {
       path: '/onboarding/additional-docs',
-      name: 'OnboardingAdditionalDocs',
-      component: () => import('@/views/AdditionalDocsView.vue'),
-      meta: { title: 'Additional Documents' },
+      redirect: { name: 'OnboardingPassportCountry' },
     },
     {
       path: '/onboarding/passport-country',
@@ -69,6 +68,12 @@ const router = createRouter({
       name: 'RequiredDocuments',
       component: () => import('@/views/RequiredListView.vue'),
       meta: { title: 'Required Documents', requiresAuth: true },
+    },
+    {
+      path: '/documents/confirmation',
+      name: 'DocumentConfirmation',
+      component: () => import('@/views/DocumentConfirmationView.vue'),
+      meta: { title: 'Application Submitted', requiresAuth: true },
     },
     {
       path: '/payment',
@@ -122,26 +127,31 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+  if (!authStore.user) {
+    await authStore.loadCurrentUser()
+  }
+
+  const authScreenNames = new Set(['Welcome', 'Login', 'Signup'])
+  if (authStore.user && authScreenNames.has(String(to.name))) {
+    return { name: 'Dashboard' }
+  }
+
   if (!to.meta.requiresAuth || useMockServices()) {
     if (!useMockServices() && to.name === 'Dashboard') {
-      const authStore = useAuthStore()
-      if (!authStore.user) {
-        await authStore.loadCurrentUser()
-      }
       if (authStore.user) {
         const onboarding = useOnboardingStore()
         if (!onboarding.isComplete()) {
-          return { name: 'OnboardingVisaType' }
+          const apps = await visaService.getApplications(authStore.user.id)
+          if (apps.length === 0) {
+            return { name: 'OnboardingVisaType' }
+          }
         }
       }
     }
     return true
   }
 
-  const authStore = useAuthStore()
-  if (!authStore.user) {
-    await authStore.loadCurrentUser()
-  }
   if (!authStore.user) {
     return { name: 'Login', query: { redirect: to.fullPath } }
   }

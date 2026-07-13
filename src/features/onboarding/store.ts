@@ -63,6 +63,11 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     persist()
   }
 
+  function clearPassportCountry() {
+    passportCountry.value = null
+    persist()
+  }
+
   function setHasAdditionalDocs(value: boolean) {
     hasAdditionalDocs.value = value
     persist()
@@ -78,9 +83,25 @@ export const useOnboardingStore = defineStore('onboarding', () => {
       visaType.value !== null &&
       passportType.value !== null &&
       passportCountry.value !== null &&
-      hasAdditionalDocs.value !== null &&
       destinationCountry.value !== null
     )
+  }
+
+  function hasVisaSelection(): boolean {
+    return visaType.value !== null && destinationCountry.value !== null
+  }
+
+  function getResumeRouteName():
+    | 'OnboardingVisaType'
+    | 'OnboardingPassportType'
+    | 'OnboardingPassportCountry'
+    | 'OnboardingDestination'
+    | 'RequiredDocuments' {
+    if (!visaType.value) return 'OnboardingVisaType'
+    if (!passportType.value) return 'OnboardingPassportType'
+    if (!passportCountry.value) return 'OnboardingPassportCountry'
+    if (!destinationCountry.value) return 'OnboardingDestination'
+    return 'RequiredDocuments'
   }
 
   function reset() {
@@ -101,9 +122,12 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     setVisaType,
     setPassportType,
     setPassportCountry,
+    clearPassportCountry,
     setHasAdditionalDocs,
     setDestinationCountry,
     isComplete,
+    hasVisaSelection,
+    getResumeRouteName,
     reset,
   }
 })

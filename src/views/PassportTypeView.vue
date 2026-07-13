@@ -5,7 +5,7 @@ import PassportTypeStep from '@/features/onboarding/components/PassportTypeStep.
 const router = useRouter()
 
 function goNext() {
-  router.push({ name: 'OnboardingAdditionalDocs' })
+  router.push({ name: 'OnboardingPassportCountry' })
 }
 
 function goBack() {

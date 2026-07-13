@@ -12,6 +12,7 @@ export const useDocumentsStore = defineStore('documents', () => {
   const isSubmitting = ref(false)
   const error = ref<string | null>(null)
   const isSubmitted = ref(false)
+  const lastApplicationId = ref<string | null>(null)
 
   async function loadRequiredDocuments() {
     const onboarding = useOnboardingStore()
@@ -86,13 +87,15 @@ export const useDocumentsStore = defineStore('documents', () => {
     isSubmitting.value = true
     error.value = null
     try {
-      await documentsService.submitApplication({
+      const applicationId = await documentsService.submitApplication({
         userId: auth.user.id,
         destinationCountry: onboarding.destinationCountry,
         visaType: onboarding.visaType,
         documents: uploadedDocuments.value,
       })
+      lastApplicationId.value = applicationId
       isSubmitted.value = true
+      return applicationId
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Submission failed'
     } finally {
@@ -112,6 +115,14 @@ export const useDocumentsStore = defineStore('documents', () => {
     isSubmitting.value = false
     error.value = null
     isSubmitted.value = false
+    lastApplicationId.value = null
+  }
+
+  function resetForNewApplication() {
+    uploadedDocuments.value = []
+    isSubmitted.value = false
+    lastApplicationId.value = null
+    error.value = null
   }
 
   return {
@@ -121,11 +132,13 @@ export const useDocumentsStore = defineStore('documents', () => {
     isSubmitting,
     error,
     isSubmitted,
+    lastApplicationId,
     loadRequiredDocuments,
     uploadDocument,
     submitApplication,
     allRequiredUploaded,
     isDocumentUploaded,
     reset,
+    resetForNewApplication,
   }
 })

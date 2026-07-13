@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 lg:grid lg:grid-cols-2">
+  <div class="min-h-screen bg-surface lg:grid lg:grid-cols-2">
     <div class="hidden flex-col justify-between bg-navy p-10 text-white lg:flex">
       <div>
         <p class="font-display text-2xl">Vislet</p>

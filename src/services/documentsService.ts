@@ -94,14 +94,30 @@ export async function uploadDocument(
 }
 
 export async function submitApplication(input: SubmitApplicationInput): Promise<string> {
+  const documentMeta = input.documents.map((doc) => ({
+    id: doc.id,
+    name: doc.name,
+    uploadedAt: doc.uploadedAt,
+    documentTypeId: doc.documentTypeId,
+  }))
+
   if (useMockServices()) {
-    const applicationId = `app-${Date.now()}`
-    await mockSubmitApplication(applicationId)
-    return applicationId
+    await mockSubmitApplication(`app-${Date.now()}`)
+    return saveLocalApplication(
+      input.userId,
+      input.destinationCountry,
+      input.visaType,
+      documentMeta,
+    )
   }
 
   if (!useFirebaseDocumentStorage()) {
-    return saveLocalApplication(input.userId, input.destinationCountry, input.visaType)
+    return saveLocalApplication(
+      input.userId,
+      input.destinationCountry,
+      input.visaType,
+      documentMeta,
+    )
   }
 
   const { addDoc, collection } = await import('firebase/firestore')

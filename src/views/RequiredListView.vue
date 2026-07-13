@@ -2,20 +2,25 @@
 import { useRouter } from 'vue-router'
 import AppShell from '@/layouts/AppShell.vue'
 import RequiredDocumentsList from '@/features/documents/components/RequiredDocumentsList.vue'
+import { useDocumentsStore } from '@/features/documents/store'
 
 const router = useRouter()
+const documentsStore = useDocumentsStore()
 
 function goToScan() {
   router.push({ name: 'DocumentScan' })
 }
 
-function goToPayment() {
-  router.push({ name: 'Payment' })
+async function goToConfirmation() {
+  const applicationId = documentsStore.lastApplicationId
+  if (applicationId) {
+    router.push({ name: 'DocumentConfirmation', query: { applicationId } })
+  }
 }
 </script>
 
 <template>
   <AppShell>
-    <RequiredDocumentsList @scan="goToScan" @finalize="goToPayment" />
+    <RequiredDocumentsList @scan="goToScan" @finalize="goToConfirmation" />
   </AppShell>
 </template>

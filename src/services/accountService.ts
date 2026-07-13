@@ -1,9 +1,7 @@
 import {
   deleteUser,
   EmailAuthProvider,
-  FacebookAuthProvider,
   GoogleAuthProvider,
-  OAuthProvider,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   type User as FirebaseUser,
@@ -67,21 +65,6 @@ async function reauthenticateUser(firebaseUser: FirebaseUser, password?: string)
 
   if (providerId === 'google.com') {
     await reauthenticateWithPopup(firebaseUser, new GoogleAuthProvider())
-    return
-  }
-
-  if (providerId === 'facebook.com') {
-    await reauthenticateWithPopup(firebaseUser, new FacebookAuthProvider())
-    return
-  }
-
-  if (providerId === 'microsoft.com') {
-    await reauthenticateWithPopup(firebaseUser, new OAuthProvider('microsoft.com'))
-    return
-  }
-
-  if (providerId === 'apple.com') {
-    await reauthenticateWithPopup(firebaseUser, new OAuthProvider('apple.com'))
     return
   }
 

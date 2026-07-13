@@ -34,7 +34,7 @@ function handleNext() {
 </script>
 
 <template>
-  <OnboardingLayout :current-step="2" :total-steps="5" title="What type of passport do you have?" @back="emit('back')">
+  <OnboardingLayout :current-step="2" :total-steps="4" title="What type of passport do you have?" @back="emit('back')">
     <AppOptionList v-model="selectedPassportType" :options="options" />
     <AppButton class="mt-6" full-width :disabled="!onboardingStore.passportType" @click="handleNext">
       Continue

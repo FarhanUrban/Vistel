@@ -21,13 +21,16 @@ const mockInterviews: Interview[] = [
 export async function mockGetInterviews(userId: string): Promise<Interview[]> {
   console.info('[interviewsMocks] mockGetInterviews', { userId })
   await delay(300)
-  return mockInterviews
+  // Tie mocks to the same user apps shown on the dashboard.
+  return mockInterviews.map((interview) => ({ ...interview, userId }))
 }
 
 export async function mockAddInterview(interview: Omit<Interview, 'id'>): Promise<Interview> {
   console.info('[interviewsMocks] mockAddInterview', interview)
   await delay(400)
-  return { ...interview, id: `int-${Date.now()}` }
+  const created = { ...interview, id: `int-${Date.now()}` }
+  mockInterviews.push(created)
+  return created
 }
 
 function delay(ms: number): Promise<void> {
