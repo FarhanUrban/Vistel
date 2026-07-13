@@ -4,8 +4,8 @@ const mockApplications: VisaApplication[] = [
   {
     id: 'app-1',
     userId: 'mock-user-1',
-    status: 'pending',
-    destinationCountry: 'Turkey',
+    status: 'awaiting_payment',
+    destinationCountry: 'TR',
     visaType: 'e-visa',
     submittedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
@@ -13,7 +13,7 @@ const mockApplications: VisaApplication[] = [
     id: 'app-2',
     userId: 'mock-user-1',
     status: 'rejected',
-    destinationCountry: 'India',
+    destinationCountry: 'IN',
     visaType: 'tourist',
     submittedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     rejectionCode: 'MISSING_ITINERARY',
@@ -21,24 +21,26 @@ const mockApplications: VisaApplication[] = [
   {
     id: 'app-3',
     userId: 'mock-user-1',
-    status: 'approved',
-    destinationCountry: 'Kenya',
+    status: 'completed',
+    destinationCountry: 'KE',
     visaType: 'e-visa',
     submittedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    paidAt: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ]
 
 export async function mockGetApplications(userId: string): Promise<VisaApplication[]> {
   console.info('[visaMocks] mockGetApplications', { userId })
   await delay(300)
-  return mockApplications.filter((a) => a.userId === userId)
+  // Demo apps are shared across mock auth users so the dashboard stays populated.
+  return mockApplications.map((app) => ({ ...app, userId }))
 }
 
 export async function mockGetApplicationStatus(applicationId: string): Promise<VisaApplicationStatus> {
   console.info('[visaMocks] mockGetApplicationStatus', { applicationId })
   await delay(200)
   const app = mockApplications.find((a) => a.id === applicationId)
-  return app?.status ?? 'pending'
+  return app?.status ?? 'reviewing'
 }
 
 export async function mockPollApplicationStatus(

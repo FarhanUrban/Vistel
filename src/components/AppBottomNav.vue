@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
+import NavIcon from '@/components/NavIcon.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 const navItems = [
-  { name: 'Dashboard', path: '/dashboard', icon: '📊' },
-  { name: 'Documents', path: '/documents/required-list', icon: '📄' },
-  { name: 'Payment', path: '/payment', icon: '💳' },
-  { name: 'Profile', path: '/profile', icon: '👤' },
+  { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' as const },
+  { name: 'Payment', path: '/payment', icon: 'payment' as const },
+  { name: 'Profile', path: '/profile', icon: 'profile' as const },
 ]
 
 function isActive(path: string): boolean {
@@ -21,17 +21,17 @@ function navigate(path: string) {
 </script>
 
 <template>
-  <nav class="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white safe-area-bottom lg:hidden">
-    <div class="flex justify-around items-center h-16 max-w-lg mx-auto">
+  <nav class="fixed bottom-0 left-0 right-0 border-t border-muted bg-surface safe-area-bottom lg:hidden">
+    <div class="mx-auto flex h-16 max-w-lg items-center justify-around">
       <button
         v-for="item in navItems"
         :key="item.path"
         type="button"
-        class="flex flex-col items-center justify-center flex-1 py-2 text-xs transition-colors"
-        :class="isActive(item.path) ? 'text-accent-blue font-medium' : 'text-gray-500'"
+        class="flex flex-1 flex-col items-center justify-center py-2 text-xs transition-colors"
+        :class="isActive(item.path) ? 'font-medium text-accent-blue' : 'text-gray-500'"
         @click="navigate(item.path)"
       >
-        <span class="text-lg mb-0.5">{{ item.icon }}</span>
+        <NavIcon :name="item.icon" class="mb-0.5 h-5 w-5" />
         <span>{{ item.name }}</span>
       </button>
     </div>

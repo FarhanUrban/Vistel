@@ -15,7 +15,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-50">
+  <div class="min-h-screen flex flex-col bg-surface">
     <AppHeader show-back @back="emit('back')" />
     <div class="mx-auto w-full max-w-lg flex-1 px-4 pb-24 safe-area-bottom lg:max-w-3xl lg:px-8 lg:pb-8">
       <div class="mb-6">

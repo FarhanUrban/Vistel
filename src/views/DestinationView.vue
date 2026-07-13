@@ -11,8 +11,12 @@ function goNext() {
 function goBack() {
   router.push({ name: 'OnboardingPassportCountry' })
 }
+
+function changePassport() {
+  router.push({ name: 'OnboardingPassportCountry' })
+}
 </script>
 
 <template>
-  <DestinationStep @next="goNext" @back="goBack" />
+  <DestinationStep @next="goNext" @back="goBack" @change-passport="changePassport" />
 </template>

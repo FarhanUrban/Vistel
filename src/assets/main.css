@@ -3,6 +3,8 @@
 @theme {
   --color-navy: #272727;
   --color-black: #000000;
+  --color-surface: #f7feff;
+  --color-muted: #d0d2dc;
   --color-accent-orange: #ffbc1f;
   --color-accent-blue: #86a5d9;
   --font-display: 'Lexend Mega', sans-serif;
@@ -12,7 +14,7 @@
 }
 
 body {
-  @apply font-body text-navy bg-gray-50 antialiased;
+  @apply font-body text-navy bg-surface antialiased;
 }
 
 #app {

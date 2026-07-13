@@ -3,11 +3,8 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  FacebookAuthProvider,
-  OAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  type AuthProvider,
 } from 'firebase/auth'
 import type { SocialAuthProvider } from '@/features/auth/types'
 import type { User } from '@/types'
@@ -30,24 +27,8 @@ function mapFirebaseUser(fbUser: { uid: string; email: string | null; displayNam
   }
 }
 
-function getAuthProvider(provider: SocialAuthProvider): AuthProvider {
-  switch (provider) {
-    case 'google':
-      return new GoogleAuthProvider()
-    case 'facebook':
-      return new FacebookAuthProvider()
-    case 'microsoft': {
-      const microsoftProvider = new OAuthProvider('microsoft.com')
-      microsoftProvider.setCustomParameters({ prompt: 'select_account' })
-      return microsoftProvider
-    }
-    case 'apple': {
-      const appleProvider = new OAuthProvider('apple.com')
-      appleProvider.addScope('email')
-      appleProvider.addScope('name')
-      return appleProvider
-    }
-  }
+function getAuthProvider(_provider: SocialAuthProvider): GoogleAuthProvider {
+  return new GoogleAuthProvider()
 }
 
 export async function signIn(email: string, password: string): Promise<User> {

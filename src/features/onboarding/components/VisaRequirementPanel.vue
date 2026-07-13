@@ -29,7 +29,7 @@ const officialLink = getOfficialVisaLink(props.destinationIso2)
       Traveling from {{ getCountryName(passportIso2) }}
     </p>
 
-    <div v-if="requirement" class="mt-5 rounded-control bg-gray-50 p-4">
+    <div v-if="requirement" class="mt-5 rounded-control bg-surface p-4">
       <p class="text-sm font-medium text-navy">{{ requirement.label }}</p>
       <p class="mt-1 text-sm text-gray-500">
         Based on passport-index data. Always confirm requirements on the official government site before you travel.

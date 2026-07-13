@@ -1,12 +1,7 @@
 import type { User } from '@/types'
 import type { SocialAuthProvider } from '@/features/auth/types'
 
-const MOCK_SOCIAL_PROFILES: Record<SocialAuthProvider, { email: string; displayName: string }> = {
-  google: { email: 'demo@gmail.com', displayName: 'Google User' },
-  facebook: { email: 'demo@facebook.com', displayName: 'Facebook User' },
-  microsoft: { email: 'demo@outlook.com', displayName: 'Microsoft User' },
-  apple: { email: 'demo@icloud.com', displayName: 'Apple User' },
-}
+const MOCK_GOOGLE_PROFILE = { email: 'demo@gmail.com', displayName: 'Google User' }
 
 export async function mockSignIn(email: string, _password: string): Promise<User> {
   console.info('[authMocks] mockSignIn', { email })
@@ -20,14 +15,13 @@ export async function mockSignUp(email: string, _password: string): Promise<User
   return { id: 'mock-user-1', email, displayName: 'New User' }
 }
 
-export async function mockSignInWithProvider(provider: SocialAuthProvider): Promise<User> {
-  const profile = MOCK_SOCIAL_PROFILES[provider]
-  console.info('[authMocks] mockSignInWithProvider', { provider })
+export async function mockSignInWithProvider(_provider: SocialAuthProvider): Promise<User> {
+  console.info('[authMocks] mockSignInWithProvider', { provider: 'google' })
   await delay(500)
   return {
-    id: `mock-user-${provider}`,
-    email: profile.email,
-    displayName: profile.displayName,
+    id: 'mock-user-google',
+    email: MOCK_GOOGLE_PROFILE.email,
+    displayName: MOCK_GOOGLE_PROFILE.displayName,
   }
 }
 

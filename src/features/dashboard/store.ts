@@ -11,12 +11,16 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const waitingApplications = computed(() =>
-    applications.value.filter((a) => a.status === 'pending' || a.status === 'submitted'),
+  const reviewingApplications = computed(() =>
+    applications.value.filter((a) => a.status === 'submitted' || a.status === 'reviewing'),
+  )
+
+  const awaitingPaymentApplications = computed(() =>
+    applications.value.filter((a) => a.status === 'awaiting_payment'),
   )
 
   const completedApplications = computed(() =>
-    applications.value.filter((a) => a.status === 'approved'),
+    applications.value.filter((a) => a.status === 'completed'),
   )
 
   const rejectedApplications = computed(() =>
@@ -32,7 +36,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   async function loadDashboard() {
     const auth = useAuthStore()
-    const userId = auth.user?.id ?? 'mock-user-1'
+    if (!auth.user?.id) {
+      applications.value = []
+      interviews.value = []
+      return
+    }
+    const userId = auth.user.id
 
     isLoading.value = true
     error.value = null
@@ -50,15 +59,42 @@ export const useDashboardStore = defineStore('dashboard', () => {
     }
   }
 
+  /** Scaffold for a future “Schedule interview” CTA. */
+  async function scheduleInterview(interview: Omit<Interview, 'id'>) {
+    const auth = useAuthStore()
+    if (!auth.user?.id) {
+      error.value = 'You must be logged in to schedule an interview'
+      return null
+    }
+    try {
+      const created = await interviewsService.addInterview(auth.user.id, interview)
+      interviews.value = [...interviews.value, created]
+      return created
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to schedule interview'
+      return null
+    }
+  }
+
+  function reset() {
+    applications.value = []
+    interviews.value = []
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     applications,
     interviews,
     isLoading,
     error,
-    waitingApplications,
+    reviewingApplications,
+    awaitingPaymentApplications,
     completedApplications,
     rejectedApplications,
     upcomingInterviews,
     loadDashboard,
+    scheduleInterview,
+    reset,
   }
 })

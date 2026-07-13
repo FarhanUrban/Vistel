@@ -5,6 +5,8 @@ import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
 import AppLoadingSpinner from '@/components/AppLoadingSpinner.vue'
 import DocumentCaptureModal from '@/features/documents/components/DocumentCaptureModal.vue'
+import DocumentsCountryHeader from '@/features/documents/components/DocumentsCountryHeader.vue'
+import FinalizeDocumentsGate from '@/features/documents/components/FinalizeDocumentsGate.vue'
 import { useDocumentsStore } from '@/features/documents/store'
 
 const documentsStore = useDocumentsStore()
@@ -15,6 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const captureOpen = ref(false)
+const finalizeOpen = ref(false)
 const activeDocumentId = ref<string | undefined>()
 const activeDocumentName = ref<string | undefined>()
 
@@ -35,18 +38,22 @@ async function handleUpload(file: File) {
   }
 }
 
-async function handleSubmit() {
-  await documentsStore.submitApplication()
-  if (documentsStore.isSubmitted) {
-    emit('finalize')
-  }
+function openFinalize() {
+  finalizeOpen.value = true
+}
+
+function onFinalized() {
+  finalizeOpen.value = false
+  emit('finalize')
 }
 </script>
 
 <template>
   <div>
-    <h1 class="text-2xl font-semibold text-navy mb-2 lg:text-3xl">Required documents</h1>
-    <p class="text-gray-500 mb-6">Upload each required document before submitting your application.</p>
+    <DocumentsCountryHeader show-banner />
+
+    <h1 class="mb-2 text-2xl font-semibold text-navy lg:text-3xl">Required documents</h1>
+    <p class="mb-6 text-gray-500">Upload each required document before submitting your application.</p>
 
     <AppErrorMessage v-if="documentsStore.error" :message="documentsStore.error" class="mb-4" />
     <AppLoadingSpinner v-if="documentsStore.isLoading" />
@@ -62,7 +69,7 @@ async function handleSubmit() {
                   ? 'bg-accent-blue/15 text-navy'
                   : doc.required
                     ? 'bg-accent-orange/20 text-navy'
-                    : 'bg-gray-100 text-gray-500'
+                    : 'bg-muted/60 text-gray-500'
               "
             >
               {{
@@ -87,9 +94,8 @@ async function handleSubmit() {
       <AppButton variant="outline" full-width @click="emit('scan')">Scan More Documents</AppButton>
       <AppButton
         full-width
-        :loading="documentsStore.isSubmitting"
         :disabled="!documentsStore.allRequiredUploaded()"
-        @click="handleSubmit"
+        @click="openFinalize"
       >
         Finalize E-Visa Application
       </AppButton>
@@ -103,6 +109,12 @@ async function handleSubmit() {
       :error="documentsStore.error"
       @close="captureOpen = false"
       @upload="handleUpload"
+    />
+
+    <FinalizeDocumentsGate
+      :open="finalizeOpen"
+      @close="finalizeOpen = false"
+      @submitted="onFinalized"
     />
   </div>
 </template>

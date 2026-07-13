@@ -96,6 +96,7 @@ export function saveLocalApplication(
   userId: string,
   destinationCountry: string,
   visaType: VisaType,
+  documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[] = [],
 ): string {
   const id = `app-${Date.now()}`
   const application: VisaApplication = {
@@ -105,9 +106,29 @@ export function saveLocalApplication(
     destinationCountry,
     visaType,
     submittedAt: new Date().toISOString(),
+    documents: documents.map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      uploadedAt: doc.uploadedAt,
+      documentTypeId: doc.documentTypeId,
+    })),
   }
   saveApps([...loadApps(), application])
   return id
+}
+
+export function updateLocalApplication(
+  applicationId: string,
+  patch: Partial<VisaApplication>,
+): VisaApplication {
+  const apps = loadApps()
+  const index = apps.findIndex((app) => app.id === applicationId)
+  if (index === -1) {
+    throw new Error('Application not found')
+  }
+  apps[index] = { ...apps[index], ...patch }
+  saveApps(apps)
+  return apps[index]
 }
 
 export function getLocalApplications(userId: string): VisaApplication[] {

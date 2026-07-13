@@ -4,12 +4,15 @@ import AuthLayout from '@/layouts/AuthLayout.vue'
 import AppCard from '@/components/AppCard.vue'
 import AppButton from '@/components/AppButton.vue'
 import { usePaymentsStore } from '@/features/payments/store'
+import { useDashboardStore } from '@/features/dashboard/store'
 
 const router = useRouter()
 const paymentsStore = usePaymentsStore()
+const dashboardStore = useDashboardStore()
 
-function goToDashboard() {
+async function goToDashboard() {
   paymentsStore.reset()
+  await dashboardStore.loadDashboard()
   router.push({ name: 'Dashboard' })
 }
 </script>

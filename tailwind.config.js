@@ -6,6 +6,8 @@ export default {
       colors: {
         navy: '#272727',
         black: '#000000',
+        surface: '#F7FEFF',
+        muted: '#D0D2DC',
         'accent-orange': '#FFBC1F',
         'accent-blue': '#86A5D9',
       },

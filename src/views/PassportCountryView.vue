@@ -9,7 +9,7 @@ function goNext() {
 }
 
 function goBack() {
-  router.push({ name: 'OnboardingAdditionalDocs' })
+  router.push({ name: 'OnboardingPassportType' })
 }
 </script>
 

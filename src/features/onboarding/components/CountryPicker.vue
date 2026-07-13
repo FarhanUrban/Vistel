@@ -6,22 +6,29 @@ import AppBadge from '@/components/AppBadge.vue'
 import AppButton from '@/components/AppButton.vue'
 import AppModal from '@/components/AppModal.vue'
 import VisaRequirementPanel from '@/features/onboarding/components/VisaRequirementPanel.vue'
+import CountryFlag from '@/components/CountryFlag.vue'
 import {
   getCountryName,
   getVisaRequirement,
-  iso2ToFlag,
   normalizeRequirement,
   searchCountries,
 } from '@/services/visaIndexService'
 
-const props = defineProps<{
-  modelValue: string | null
-  passportIso2?: string | null
-  mode?: 'passport' | 'destination'
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: string | null
+    passportIso2?: string | null
+    mode?: 'passport' | 'destination'
+    confirmLabel?: string
+  }>(),
+  {
+    mode: 'destination',
+    confirmLabel: 'Continue',
+  },
+)
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: string | null]
   continue: []
 }>()
 
@@ -33,7 +40,7 @@ const countries = computed(() => searchCountries(query.value, props.passportIso2
 const selectedIso2 = computed({
   get: () => props.modelValue,
   set: (value: string | null) => {
-    if (value) emit('update:modelValue', value)
+    emit('update:modelValue', value)
   },
 })
 
@@ -51,6 +58,14 @@ function handleContinue() {
   emit('continue')
   showMobileDetail.value = false
 }
+
+function closeMobileDetail() {
+  showMobileDetail.value = false
+  if (props.mode === 'passport') {
+    // Closing without confirm clears the pending selection so tap alone cannot stick.
+    selectedIso2.value = null
+  }
+}
 </script>
 
 <template>
@@ -65,7 +80,7 @@ function handleContinue() {
             @click="selectCountry(country.iso2)"
           >
             <template #leading>
-              <span class="text-2xl leading-none" aria-hidden="true">{{ country.flag }}</span>
+              <CountryFlag :iso2="country.iso2" />
             </template>
             <template v-if="mode === 'destination' && passportIso2" #trailing>
               <AppBadge v-if="requirementFor(country.iso2)" :category="requirementFor(country.iso2)!.category">
@@ -86,14 +101,21 @@ function handleContinue() {
       />
       <div
         v-else-if="mode === 'passport' && selectedIso2"
-        class="rounded-card border border-gray-200 bg-white p-6"
+        class="rounded-card border border-muted bg-white p-6"
       >
-        <p class="text-3xl">{{ iso2ToFlag(selectedIso2) }}</p>
+        <CountryFlag :iso2="selectedIso2" size="lg" />
         <h2 class="mt-3 text-xl font-semibold text-navy">{{ getCountryName(selectedIso2) }}</h2>
         <p class="mt-2 text-sm text-gray-500">This is the country that issued your passport.</p>
-        <AppButton class="mt-6" full-width @click="handleContinue">Continue</AppButton>
+        <AppButton class="mt-6" full-width @click="handleContinue">{{ confirmLabel }}</AppButton>
+        <button
+          type="button"
+          class="mt-3 w-full text-sm font-medium text-gray-500 hover:text-navy"
+          @click="selectedIso2 = null"
+        >
+          Choose a different country
+        </button>
       </div>
-      <div v-else class="rounded-card border border-dashed border-gray-200 bg-white p-6 text-gray-500">
+      <div v-else class="rounded-card border border-dashed border-muted bg-white p-6 text-gray-500">
         Select a country to see details.
       </div>
     </div>
@@ -113,13 +135,20 @@ function handleContinue() {
     <AppModal
       v-else-if="mode === 'passport' && selectedIso2"
       :open="showMobileDetail"
-      @close="showMobileDetail = false"
+      @close="closeMobileDetail"
     >
       <div>
-        <p class="text-4xl">{{ iso2ToFlag(selectedIso2) }}</p>
+        <CountryFlag :iso2="selectedIso2" size="lg" />
         <h2 class="mt-3 text-xl font-semibold text-navy">{{ getCountryName(selectedIso2) }}</h2>
         <p class="mt-2 text-sm text-gray-500">This is the country that issued your passport.</p>
-        <AppButton class="mt-6" full-width @click="handleContinue">Continue</AppButton>
+        <AppButton class="mt-6" full-width @click="handleContinue">{{ confirmLabel }}</AppButton>
+        <button
+          type="button"
+          class="mt-3 w-full text-sm font-medium text-gray-500 hover:text-navy"
+          @click="closeMobileDetail"
+        >
+          Choose a different country
+        </button>
       </div>
     </AppModal>
   </div>
