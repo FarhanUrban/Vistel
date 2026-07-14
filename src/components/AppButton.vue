@@ -28,16 +28,17 @@ withDefaults(defineProps<Props>(), {
       size === 'sm' ? 'px-3 py-1.5 text-sm' : '',
       size === 'md' ? 'px-4 py-2.5 text-base' : '',
       size === 'lg' ? 'px-6 py-3 text-lg' : '',
-      variant === 'primary'
-        ? 'bg-navy text-surface hover:bg-accent-orange hover:text-navy'
-        : '',
+      variant === 'primary' ? 'bg-navy text-surface hover:bg-accent-orange hover:text-navy' : '',
       variant === 'secondary' ? 'bg-accent-orange text-navy hover:brightness-95' : '',
       variant === 'outline'
         ? 'border-2 border-accent-blue bg-surface text-accent-blue hover:bg-accent-blue/15'
         : '',
     ]"
   >
-    <span v-if="loading" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+    <span
+      v-if="loading"
+      class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+    />
     <slot />
   </button>
 </template>

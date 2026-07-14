@@ -42,7 +42,7 @@ function handleSocialSuccess() {
         <button
           type="button"
           class="mb-4 text-sm font-medium text-accent-blue hover:underline"
-          @click="router.push({ name: 'Welcome' })"
+          @click="router.push({ name: 'Landing' })"
         >
           ← Back
         </button>

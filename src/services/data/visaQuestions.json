@@ -1,0 +1,1557 @@
+{
+  "default": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "accommodation_type",
+      "label": "Where will you stay?",
+      "type": "select",
+      "required": true,
+      "category": "Accommodation",
+      "options": [
+        "Hotel",
+        "Friend/family",
+        "Rental",
+        "Other"
+      ],
+      "placeholder": "Select accommodation"
+    },
+    {
+      "id": "accommodation_address",
+      "label": "Accommodation address or hotel name",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation",
+      "placeholder": "Full address"
+    },
+    {
+      "id": "employment_status",
+      "label": "Current employment status",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Unemployed",
+        "Retired"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer or school name",
+      "type": "text",
+      "required": false,
+      "category": "Employment",
+      "placeholder": "Optional if unemployed/retired"
+    },
+    {
+      "id": "funds_available",
+      "label": "Estimated funds available for this trip (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal",
+      "placeholder": "e.g. 2000"
+    },
+    {
+      "id": "emergency_contact",
+      "label": "Emergency contact name and phone",
+      "type": "text",
+      "required": true,
+      "category": "Personal",
+      "placeholder": "Name, phone"
+    }
+  ],
+  "TR_e-visa": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "port_of_entry",
+      "label": "Intended port of entry in Türkiye",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Istanbul Airport (IST)",
+        "Sabiha Gökçen (SAW)",
+        "Antalya (AYT)",
+        "Other"
+      ],
+      "placeholder": "Select port"
+    },
+    {
+      "id": "accommodation_type",
+      "label": "Where will you stay?",
+      "type": "select",
+      "required": true,
+      "category": "Accommodation",
+      "options": [
+        "Hotel",
+        "Friend/family",
+        "Tour package",
+        "Other"
+      ]
+    },
+    {
+      "id": "accommodation_address",
+      "label": "Hotel name or host address",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment status",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Unemployed",
+        "Retired"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer or school",
+      "type": "text",
+      "required": false,
+      "category": "Employment"
+    },
+    {
+      "id": "previous_turkey_visit",
+      "label": "Have you visited Türkiye before?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "id": "emergency_contact",
+      "label": "Emergency contact",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    }
+  ],
+  "IN_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "cities_to_visit",
+      "label": "Cities you plan to visit",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "e.g. Delhi, Agra, Jaipur"
+    },
+    {
+      "id": "accommodation_type",
+      "label": "Accommodation type",
+      "type": "select",
+      "required": true,
+      "category": "Accommodation",
+      "options": [
+        "Hotel",
+        "Guest house",
+        "Friend/family",
+        "Other"
+      ]
+    },
+    {
+      "id": "accommodation_address",
+      "label": "First night address in India",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Occupation",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Other"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer / institution",
+      "type": "text",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "funds_available",
+      "label": "Funds available (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "reference_india",
+      "label": "Reference contact in India (if any)",
+      "type": "text",
+      "required": false,
+      "category": "Personal",
+      "placeholder": "Name and phone"
+    },
+    {
+      "id": "previous_india_visa",
+      "label": "Have you held an Indian visa before?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    }
+  ],
+  "KE_e-visa": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_detail",
+      "label": "Describe your trip briefly",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "entry_point",
+      "label": "Point of entry",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Jomo Kenyatta (NBO)",
+        "Moi International (MBA)",
+        "Land border",
+        "Other"
+      ]
+    },
+    {
+      "id": "accommodation_address",
+      "label": "Where will you stay?",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment status",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Other"
+      ]
+    },
+    {
+      "id": "yellow_fever",
+      "label": "Do you have a yellow fever vaccination certificate?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "Yes",
+        "No",
+        "Not required"
+      ]
+    },
+    {
+      "id": "funds_available",
+      "label": "Funds for the trip (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    }
+  ],
+  "VN_e-visa": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "entry_gate",
+      "label": "Intended entry gate",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Noi Bai (HAN)",
+        "Tan Son Nhat (SGN)",
+        "Da Nang (DAD)",
+        "Other"
+      ]
+    },
+    {
+      "id": "accommodation_address",
+      "label": "Address in Vietnam",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Occupation",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Retired",
+        "Other"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer or school",
+      "type": "text",
+      "required": false,
+      "category": "Employment"
+    },
+    {
+      "id": "phone_vietnam",
+      "label": "Contact phone while in Vietnam",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "funds_available",
+      "label": "Funds available (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    }
+  ],
+  "EG_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_detail",
+      "label": "Purpose details",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "accommodation_type",
+      "label": "Accommodation",
+      "type": "select",
+      "required": true,
+      "category": "Accommodation",
+      "options": [
+        "Hotel",
+        "Nile cruise",
+        "Friend/family",
+        "Other"
+      ]
+    },
+    {
+      "id": "accommodation_address",
+      "label": "Hotel or address in Egypt",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Other"
+      ]
+    },
+    {
+      "id": "funds_available",
+      "label": "Trip budget (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "previous_egypt",
+      "label": "Visited Egypt before?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    }
+  ],
+  "TH_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "cities_to_visit",
+      "label": "Main destinations in Thailand",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "accommodation_address",
+      "label": "First hotel / address",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment status",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Retired",
+        "Other"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer",
+      "type": "text",
+      "required": false,
+      "category": "Employment"
+    },
+    {
+      "id": "funds_available",
+      "label": "Proof of funds amount (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "return_ticket",
+      "label": "Do you have a return or onward ticket?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    }
+  ],
+  "US_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_of_visit",
+      "label": "Purpose of trip",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Tourism",
+        "Visiting family/friends",
+        "Medical treatment",
+        "Short business (B1 overlap)",
+        "Other"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Intended U.S. arrival",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Intended U.S. departure",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "us_address",
+      "label": "Address where you will stay in the U.S.",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "us_contact",
+      "label": "U.S. contact person or hotel phone",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "employment_status",
+      "label": "Primary occupation",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Unemployed",
+        "Retired"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer / school name and address",
+      "type": "textarea",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "annual_income",
+      "label": "Approximate annual income (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "previous_us_visa",
+      "label": "Have you been issued a U.S. visa before?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "id": "relatives_us",
+      "label": "Do you have immediate relatives in the U.S.?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    }
+  ],
+  "GB_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_detail",
+      "label": "Why are you visiting the UK?",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "uk_address",
+      "label": "UK address for your stay",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment status",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Unemployed",
+        "Retired"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer details",
+      "type": "textarea",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "funds_available",
+      "label": "Funds available for the trip (GBP)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "previous_uk_visa",
+      "label": "Previous UK visa applications?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "None",
+        "Granted",
+        "Refused"
+      ]
+    },
+    {
+      "id": "criminal_history",
+      "label": "Any criminal convictions?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "No",
+        "Yes"
+      ]
+    }
+  ],
+  "CA_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_detail",
+      "label": "Purpose of travel to Canada",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "ca_address",
+      "label": "Address in Canada",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Occupation",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Other"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer / school",
+      "type": "text",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "funds_available",
+      "label": "Available funds (CAD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "biometrics",
+      "label": "Have you given biometrics for Canada before?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "Yes",
+        "No",
+        "Not sure"
+      ]
+    },
+    {
+      "id": "previous_canada",
+      "label": "Visited Canada before?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    }
+  ],
+  "AU_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_of_visit",
+      "label": "Main reason for travel",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Holiday",
+        "Visit family",
+        "Short business",
+        "Other"
+      ]
+    },
+    {
+      "id": "au_address",
+      "label": "Australian address",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Retired",
+        "Other"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer or business name",
+      "type": "text",
+      "required": false,
+      "category": "Employment"
+    },
+    {
+      "id": "funds_available",
+      "label": "Funds for visit (AUD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "health_insurance",
+      "label": "Do you have travel health insurance?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "id": "character",
+      "label": "Character declaration: any serious convictions?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "No",
+        "Yes"
+      ]
+    }
+  ],
+  "JP_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_detail",
+      "label": "Purpose of visit to Japan",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "jp_itinerary",
+      "label": "Day-by-day outline (brief)",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel",
+      "helpText": "List main cities and dates"
+    },
+    {
+      "id": "accommodation_address",
+      "label": "Hotel bookings / addresses",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employment_status",
+      "label": "Occupation",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Other"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Company or school",
+      "type": "text",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "guarantor",
+      "label": "Guarantor in Japan (if any)",
+      "type": "text",
+      "required": false,
+      "category": "Personal"
+    },
+    {
+      "id": "funds_available",
+      "label": "Travel funds (JPY or USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    }
+  ],
+  "FR_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "schengen_main",
+      "label": "Main Schengen destination?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes — France",
+        "No — France is transit"
+      ]
+    },
+    {
+      "id": "fr_address",
+      "label": "Address in France",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "travel_insurance",
+      "label": "Schengen travel insurance (min €30,000)?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment status",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Other"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer",
+      "type": "text",
+      "required": false,
+      "category": "Employment"
+    },
+    {
+      "id": "funds_available",
+      "label": "Daily funds (EUR)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "previous_schengen",
+      "label": "Previous Schengen visas?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "None",
+        "Granted",
+        "Refused"
+      ]
+    }
+  ],
+  "DE_business": [
+    {
+      "id": "purpose_of_visit",
+      "label": "Business purpose",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Meeting",
+        "Conference",
+        "Training",
+        "Contract negotiation",
+        "Other"
+      ],
+      "placeholder": "Select"
+    },
+    {
+      "id": "arrival_date",
+      "label": "Arrival in Germany",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Departure from Germany",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "host_company",
+      "label": "German host company name",
+      "type": "text",
+      "required": true,
+      "category": "Employment",
+      "placeholder": "Company inviting you"
+    },
+    {
+      "id": "host_address",
+      "label": "Host company address",
+      "type": "textarea",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "invitation_ref",
+      "label": "Invitation letter reference",
+      "type": "text",
+      "required": false,
+      "category": "Employment"
+    },
+    {
+      "id": "accommodation_address",
+      "label": "Hotel or stay address",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "employer_name",
+      "label": "Your employer (home country)",
+      "type": "text",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "job_title",
+      "label": "Your job title",
+      "type": "text",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "funds_sponsor",
+      "label": "Who covers trip costs?",
+      "type": "select",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "My employer",
+        "German host",
+        "Myself",
+        "Shared"
+      ]
+    }
+  ],
+  "DE_tourist": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "schengen_main",
+      "label": "Is Germany your main destination?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "id": "de_address",
+      "label": "Address in Germany",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "travel_insurance",
+      "label": "Schengen insurance confirmed?",
+      "type": "radio",
+      "required": true,
+      "category": "Personal",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "id": "employment_status",
+      "label": "Employment",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Other"
+      ]
+    },
+    {
+      "id": "funds_available",
+      "label": "Available funds (EUR)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "previous_schengen",
+      "label": "Prior Schengen history",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "None",
+        "Granted",
+        "Refused"
+      ]
+    }
+  ],
+  "US_business": [
+    {
+      "id": "purpose_of_visit",
+      "label": "What is the purpose of your visit?",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "placeholder": "Select purpose",
+      "options": [
+        "Tourism",
+        "Business",
+        "Medical",
+        "Education",
+        "Family visit"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Planned arrival date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Planned departure date",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "purpose_of_visit",
+      "label": "Purpose of trip",
+      "type": "select",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Tourism",
+        "Visiting family/friends",
+        "Medical treatment",
+        "Short business (B1 overlap)",
+        "Other"
+      ]
+    },
+    {
+      "id": "arrival_date",
+      "label": "Intended U.S. arrival",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "departure_date",
+      "label": "Intended U.S. departure",
+      "type": "date",
+      "required": true,
+      "category": "Travel"
+    },
+    {
+      "id": "us_address",
+      "label": "Address where you will stay in the U.S.",
+      "type": "textarea",
+      "required": true,
+      "category": "Accommodation"
+    },
+    {
+      "id": "us_contact",
+      "label": "U.S. contact person or hotel phone",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "employment_status",
+      "label": "Primary occupation",
+      "type": "radio",
+      "required": true,
+      "category": "Employment",
+      "options": [
+        "Employed",
+        "Self-employed",
+        "Student",
+        "Unemployed",
+        "Retired"
+      ]
+    },
+    {
+      "id": "employer_name",
+      "label": "Employer / school name and address",
+      "type": "textarea",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "annual_income",
+      "label": "Approximate annual income (USD)",
+      "type": "text",
+      "required": true,
+      "category": "Personal"
+    },
+    {
+      "id": "previous_us_visa",
+      "label": "Have you been issued a U.S. visa before?",
+      "type": "radio",
+      "required": true,
+      "category": "Travel",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "id": "us_company",
+      "label": "U.S. company you will visit",
+      "type": "text",
+      "required": true,
+      "category": "Employment"
+    },
+    {
+      "id": "meeting_purpose",
+      "label": "Nature of business activity",
+      "type": "textarea",
+      "required": true,
+      "category": "Travel"
+    }
+  ]
+}

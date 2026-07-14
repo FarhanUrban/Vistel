@@ -49,7 +49,7 @@ function handleSocialSuccess() {
         <button
           type="button"
           class="mb-4 text-sm font-medium text-accent-blue hover:underline"
-          @click="router.push({ name: 'Welcome' })"
+          @click="router.push({ name: 'Landing' })"
         >
           ← Back
         </button>
@@ -70,7 +70,9 @@ function handleSocialSuccess() {
           placeholder="••••••••"
           :error="passwordError"
         />
-        <AppButton type="submit" full-width :loading="authStore.isLoading">Create Account</AppButton>
+        <AppButton type="submit" full-width :loading="authStore.isLoading"
+          >Create Account</AppButton
+        >
       </form>
 
       <SocialSignInButtons @success="handleSocialSuccess" />

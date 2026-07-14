@@ -9,7 +9,9 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/welcome',
+      name: 'Landing',
+      component: () => import('@/views/LandingView.vue'),
+      meta: { title: 'Vislet - Simplified Visa Applications' },
     },
     {
       path: '/welcome',

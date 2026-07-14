@@ -134,13 +134,17 @@ function openInterview(interview: Interview) {
               <div class="flex min-w-0 items-start gap-3">
                 <CountryFlag :iso2="draft.destinationCountry!" />
                 <div>
-                  <p class="font-medium text-navy">{{ getCountryName(draft.destinationCountry!) }}</p>
+                  <p class="font-medium text-navy">
+                    {{ getCountryName(draft.destinationCountry!) }}
+                  </p>
                   <p class="text-sm capitalize text-navy/60">
                     {{ formatVisaType(draft.visaType!) }} visa
                   </p>
                 </div>
               </div>
-              <span class="shrink-0 rounded bg-accent-orange/25 px-2 py-1 text-xs font-medium text-navy">
+              <span
+                class="shrink-0 rounded bg-accent-orange/25 px-2 py-1 text-xs font-medium text-navy"
+              >
                 In progress
               </span>
             </div>
@@ -195,9 +199,7 @@ function openInterview(interview: Interview) {
               <ApplicationStatusBadge :status="app.status" />
             </div>
             <p class="mt-2 text-xs font-medium text-accent-blue">
-              {{
-                app.status === 'payment_processing' ? 'Payment processing…' : 'Tap to pay →'
-              }}
+              {{ app.status === 'payment_processing' ? 'Payment processing…' : 'Tap to pay →' }}
             </p>
           </AppCard>
         </div>
@@ -228,8 +230,12 @@ function openInterview(interview: Interview) {
                     }}
                   </p>
                   <p class="mt-0.5 text-sm text-navy/60">{{ interview.location }}</p>
-                  <p class="mt-1 text-sm text-navy/60">{{ formatDateTime(interview.scheduledAt) }}</p>
-                  <p v-if="interview.notes" class="mt-2 text-xs text-navy/50">{{ interview.notes }}</p>
+                  <p class="mt-1 text-sm text-navy/60">
+                    {{ formatDateTime(interview.scheduledAt) }}
+                  </p>
+                  <p v-if="interview.notes" class="mt-2 text-xs text-navy/50">
+                    {{ interview.notes }}
+                  </p>
                 </div>
               </div>
               <span
@@ -247,7 +253,8 @@ function openInterview(interview: Interview) {
         </div>
         <AppCard v-else padding="sm" class="border-dashed border-muted">
           <p class="text-sm text-navy/60">
-            No upcoming interviews yet. When a consulate schedules one—or you add your own—it will show up here.
+            No upcoming interviews yet. When a consulate schedules one—or you add your own—it will
+            show up here.
           </p>
         </AppCard>
       </section>
@@ -289,11 +296,7 @@ function openInterview(interview: Interview) {
       </div>
     </template>
 
-    <AppModal
-      :open="!!selectedCompleted"
-      title="Visa details"
-      @close="selectedCompleted = null"
-    >
+    <AppModal :open="!!selectedCompleted" title="Visa details" @close="selectedCompleted = null">
       <template v-if="selectedCompleted">
         <div class="mb-3 flex items-center gap-3">
           <CountryFlag :iso2="selectedCompleted.destinationCountry" size="lg" />

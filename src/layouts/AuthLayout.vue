@@ -3,7 +3,9 @@
     <div class="hidden flex-col justify-between bg-navy p-10 text-surface lg:flex">
       <div>
         <p class="font-display text-2xl text-accent-orange">Vislet</p>
-        <h2 class="mt-8 text-3xl font-semibold leading-tight text-surface">Simplify your visa journey</h2>
+        <h2 class="mt-8 text-3xl font-semibold leading-tight text-surface">
+          Simplify your visa journey
+        </h2>
         <p class="mt-4 max-w-md text-muted">
           Track requirements, upload documents, and manage your application in one place.
         </p>

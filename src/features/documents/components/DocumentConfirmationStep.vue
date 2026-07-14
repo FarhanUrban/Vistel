@@ -111,7 +111,9 @@ onUnmounted(() => {
         <div v-if="reviewResult === 'approved'" class="text-5xl mb-3">✅</div>
         <div v-else class="text-5xl mb-3">❌</div>
         <p class="font-medium text-navy">
-          {{ reviewResult === 'approved' ? 'Approved — ready for payment' : 'Application rejected' }}
+          {{
+            reviewResult === 'approved' ? 'Approved — ready for payment' : 'Application rejected'
+          }}
         </p>
         <p class="text-sm text-gray-500 mt-1">Redirecting…</p>
       </AppCard>

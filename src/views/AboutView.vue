@@ -14,9 +14,9 @@ import AppLogo from '@/components/AppLogo.vue'
     <AppCard class="mb-4">
       <h2 class="font-medium text-navy mb-2">Our mission</h2>
       <p class="text-sm text-gray-600 leading-relaxed">
-        Vislet simplifies applying for visas and e-visas. We tell you what documents you need,
-        help you scan and upload them, handle payment, and track your application status — all in
-        one mobile-first dashboard.
+        Vislet simplifies applying for visas and e-visas. We tell you what documents you need, help
+        you scan and upload them, handle payment, and track your application status — all in one
+        mobile-first dashboard.
       </p>
     </AppCard>
 

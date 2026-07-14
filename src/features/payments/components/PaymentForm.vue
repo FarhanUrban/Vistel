@@ -115,7 +115,10 @@ async function handlePay() {
     </AppCard>
 
     <template v-else-if="!loadingApps && !paymentsStore.isLoading">
-      <p v-if="!selectedApplicationId && awaitingPaymentApps.length === 0" class="mb-6 text-navy/60">
+      <p
+        v-if="!selectedApplicationId && awaitingPaymentApps.length === 0"
+        class="mb-6 text-navy/60"
+      >
         Your cart is empty. Complete document submission and get approved to pay.
       </p>
       <p v-else-if="showApplicationPicker" class="mb-6 text-navy/60">
@@ -156,10 +159,7 @@ async function handlePay() {
           {{ formatVisaType(paymentsStore.checkoutApplication.visaType) }} visa
         </p>
 
-        <div
-          v-if="awaitingPaymentApps.length > 1"
-          class="mb-4 border-b border-muted pb-4"
-        >
+        <div v-if="awaitingPaymentApps.length > 1" class="mb-4 border-b border-muted pb-4">
           <button
             type="button"
             class="text-sm font-medium text-accent-blue hover:underline"

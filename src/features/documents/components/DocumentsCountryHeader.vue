@@ -6,10 +6,7 @@ import { useOnboardingStore } from '@/features/onboarding/store'
 import { useDashboardStore } from '@/features/dashboard/store'
 import { useDocumentsStore } from '@/features/documents/store'
 import { getCountryName } from '@/services/visaIndexService'
-import {
-  countryBannerFallbackUrl,
-  countryBannerUrl,
-} from '@/services/countryVisuals'
+import { countryBannerFallbackUrl, countryBannerUrl } from '@/services/countryVisuals'
 
 const props = defineProps<{
   showBanner?: boolean

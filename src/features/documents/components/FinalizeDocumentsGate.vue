@@ -19,7 +19,7 @@ const emit = defineEmits<{
 const documentsStore = useDocumentsStore()
 const onboardingStore = useOnboardingStore()
 
-const step = ref<'ask' | 'upload'>('ask')
+const step = ref<'summary' | 'ask' | 'upload'>('summary')
 const captureOpen = ref(false)
 
 const options = [
@@ -42,15 +42,32 @@ const additionalUploaded = computed(() =>
   documentsStore.uploadedDocuments.some((d) => d.documentTypeId === 'additional'),
 )
 
+const answerGroups = computed(() => {
+  const groups = new Map<string, { label: string; value: string }[]>()
+  for (const question of documentsStore.visaQuestions) {
+    const raw = documentsStore.answers[question.id]
+    if (!raw || !raw.trim()) continue
+    const category = question.category ?? 'Other'
+    const list = groups.get(category) ?? []
+    list.push({ label: question.label, value: raw })
+    groups.set(category, list)
+  }
+  return [...groups.entries()].map(([category, items]) => ({ category, items }))
+})
+
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      step.value = 'ask'
+      step.value = 'summary'
       captureOpen.value = false
     }
   },
 )
+
+function continueFromSummary() {
+  step.value = 'ask'
+}
 
 async function continueFromAsk() {
   if (onboardingStore.hasAdditionalDocs === null) return
@@ -62,6 +79,7 @@ async function continueFromAsk() {
 }
 
 async function submit() {
+  if (!documentsStore.canFinalize) return
   await documentsStore.submitApplication()
   if (documentsStore.isSubmitted) {
     emit('submitted')
@@ -81,8 +99,44 @@ function closeGate() {
 </script>
 
 <template>
+  <AppModal :open="open && step === 'summary'" title="Review your answers" @close="closeGate">
+    <p class="mb-4 text-sm text-navy/60">
+      Confirm your application answers before submitting.
+    </p>
+    <div v-if="answerGroups.length === 0" class="mb-4 text-sm text-navy/50">
+      No answers recorded.
+    </div>
+    <div v-else class="mb-6 max-h-72 space-y-4 overflow-y-auto">
+      <section v-for="group in answerGroups" :key="group.category">
+        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-accent-blue">
+          {{ group.category }}
+        </h3>
+        <ul class="space-y-2">
+          <li
+            v-for="item in group.items"
+            :key="item.label"
+            class="rounded-control border border-muted bg-surface px-3 py-2"
+          >
+            <p class="text-xs text-navy/50">{{ item.label }}</p>
+            <p class="text-sm font-medium text-navy">{{ item.value }}</p>
+          </li>
+        </ul>
+      </section>
+    </div>
+    <AppButton
+      full-width
+      variant="secondary"
+      :disabled="!documentsStore.canFinalize"
+      @click="continueFromSummary"
+    >
+      Continue
+    </AppButton>
+  </AppModal>
+
   <AppModal :open="open && step === 'ask'" title="Additional documents" @close="closeGate">
-    <p class="mb-4 text-sm text-navy/60">Do you have additional documents to include before submitting?</p>
+    <p class="mb-4 text-sm text-navy/60">
+      Do you have additional documents to include before submitting?
+    </p>
     <AppOptionList v-model="selected" :options="options" />
     <AppButton
       class="mt-6"
@@ -93,9 +147,14 @@ function closeGate() {
     >
       Continue
     </AppButton>
+    <AppButton class="mt-3" variant="outline" full-width @click="step = 'summary'">Back</AppButton>
   </AppModal>
 
-  <AppModal :open="open && step === 'upload'" title="Upload additional documents" @close="closeGate">
+  <AppModal
+    :open="open && step === 'upload'"
+    title="Upload additional documents"
+    @close="closeGate"
+  >
     <p class="mb-4 text-sm text-navy/60">
       Add any supporting documents, then finalize your application.
     </p>
@@ -109,7 +168,7 @@ function closeGate() {
       <AppButton
         full-width
         :loading="documentsStore.isSubmitting"
-        :disabled="!additionalUploaded"
+        :disabled="!additionalUploaded || !documentsStore.canFinalize"
         @click="submit"
       >
         Finalize E-Visa Application

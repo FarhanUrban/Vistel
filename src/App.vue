@@ -11,16 +11,16 @@ watch(
     document.title = title ? `${title} - Vislet` : 'Vislet'
 
     let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']")
-    
+
     if (!link) {
       link = document.createElement('link')
       link.rel = 'icon'
       document.head.appendChild(link)
     }
-    
+
     link.type = 'image/png'
-    // Point to the renamed asset and append a unique timestamp 
-    link.href = `/logo-v2.png?t=${new Date().getTime()}` 
+    // Point to the renamed asset and append a unique timestamp
+    link.href = `/logo-v2.png?t=${new Date().getTime()}`
   },
   { immediate: true },
 )

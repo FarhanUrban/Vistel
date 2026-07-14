@@ -84,11 +84,7 @@ export async function pretendUploadDocument(
 
   const docs = loadDocs().filter(
     (doc) =>
-      !(
-        doc.userId === userId &&
-        doc.documentTypeId === documentTypeId &&
-        sameScope(doc, scope)
-      ),
+      !(doc.userId === userId && doc.documentTypeId === documentTypeId && sameScope(doc, scope)),
   )
   docs.push(record)
   saveDocs(docs)
@@ -129,9 +125,7 @@ export function clearStoredDocuments(userId: string, scope?: DocumentScope): voi
     saveDocs(loadDocs().filter((doc) => doc.userId !== userId))
     return
   }
-  saveDocs(
-    loadDocs().filter((doc) => !(doc.userId === userId && sameScope(doc, scope))),
-  )
+  saveDocs(loadDocs().filter((doc) => !(doc.userId === userId && sameScope(doc, scope))))
 }
 
 export function saveLocalApplication(
@@ -139,6 +133,7 @@ export function saveLocalApplication(
   destinationCountry: string,
   visaType: VisaType,
   documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[] = [],
+  answers: Record<string, string> = {},
 ): string {
   const id = `app-${Date.now()}`
   const application: VisaApplication = {
@@ -154,6 +149,7 @@ export function saveLocalApplication(
       uploadedAt: doc.uploadedAt,
       documentTypeId: doc.documentTypeId,
     })),
+    answers,
   }
   saveApps([...loadApps(), application])
   return id
@@ -196,8 +192,7 @@ export function wipeAllVisletLocalData(): void {
 
 /** Visa validity length from payment date. */
 export function visaExpiryFromPaidAt(paidAt: string, visaType: VisaType): string {
-  const days =
-    visaType === 'e-visa' ? 90 : visaType === 'tourist' ? 180 : 365
+  const days = visaType === 'e-visa' ? 90 : visaType === 'tourist' ? 180 : 365
   const date = new Date(paidAt)
   date.setDate(date.getDate() + days)
   return date.toISOString()

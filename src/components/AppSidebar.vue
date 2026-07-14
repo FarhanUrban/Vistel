@@ -32,7 +32,11 @@ function navigate(path: string) {
         :key="item.path"
         type="button"
         class="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-sm font-medium transition-colors"
-        :class="isActive(item.path) ? 'bg-accent-orange/25 text-navy' : 'text-navy/60 hover:bg-accent-blue/10'"
+        :class="
+          isActive(item.path)
+            ? 'bg-accent-orange/25 text-navy'
+            : 'text-navy/60 hover:bg-accent-blue/10'
+        "
         @click="navigate(item.path)"
       >
         <span

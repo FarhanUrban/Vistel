@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { RequiredDocument, UploadedDocument } from '@/types'
+import { computed, ref } from 'vue'
+import type { RequiredDocument, UploadedDocument, VisaQuestion } from '@/types'
 import * as documentsService from '@/services/documentsService'
 import { useOnboardingStore } from '@/features/onboarding/store'
 import { useAuthStore } from '@/features/auth/store'
@@ -8,6 +8,8 @@ import { useAuthStore } from '@/features/auth/store'
 export const useDocumentsStore = defineStore('documents', () => {
   const requiredDocuments = ref<RequiredDocument[]>([])
   const uploadedDocuments = ref<UploadedDocument[]>([])
+  const visaQuestions = ref<VisaQuestion[]>([])
+  const answers = ref<Record<string, string>>({})
   const isLoading = ref(false)
   const isSubmitting = ref(false)
   const error = ref<string | null>(null)
@@ -42,11 +44,45 @@ export const useDocumentsStore = defineStore('documents', () => {
       ])
       requiredDocuments.value = required
       uploadedDocuments.value = uploaded
+      visaQuestions.value = []
+      answers.value = {}
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load required documents'
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function loadVisaQuestions() {
+    const scope = currentScope()
+    if (!scope) {
+      error.value = 'Please complete onboarding first'
+      return
+    }
+
+    isLoading.value = true
+    error.value = null
+    try {
+      visaQuestions.value = await documentsService.getVisaQuestions(
+        scope.destinationCountry,
+        scope.visaType,
+      )
+      // Drop answers for questions that no longer exist after country switch
+      const validIds = new Set(visaQuestions.value.map((q) => q.id))
+      const next: Record<string, string> = {}
+      for (const [id, value] of Object.entries(answers.value)) {
+        if (validIds.has(id)) next[id] = value
+      }
+      answers.value = next
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to load application questions'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function setAnswer(questionId: string, value: string) {
+    answers.value = { ...answers.value, [questionId]: value }
   }
 
   async function uploadDocument(file: File, documentTypeId: string) {
@@ -89,6 +125,25 @@ export const useDocumentsStore = defineStore('documents', () => {
     return uploadedDocuments.value.some((doc) => doc.documentTypeId === documentTypeId)
   }
 
+  function allRequiredUploaded(): boolean {
+    const required = requiredDocuments.value.filter((d) => d.required)
+    if (required.length === 0) return false
+    return required.every((req) => isDocumentUploaded(req.id))
+  }
+
+  function allRequiredAnswered(): boolean {
+    const required = visaQuestions.value.filter((q) => q.required)
+    if (required.length === 0) return false
+    return required.every((q) => {
+      const value = answers.value[q.id]
+      return typeof value === 'string' && value.trim().length > 0
+    })
+  }
+
+  const canFinalize = computed(
+    () => allRequiredUploaded() && allRequiredAnswered(),
+  )
+
   async function submitApplication() {
     const auth = useAuthStore()
     const onboarding = useOnboardingStore()
@@ -106,6 +161,10 @@ export const useDocumentsStore = defineStore('documents', () => {
       error.value = 'Please upload all required documents before submitting'
       return
     }
+    if (!allRequiredAnswered()) {
+      error.value = 'Please answer all required application questions before submitting'
+      return
+    }
 
     isSubmitting.value = true
     error.value = null
@@ -115,6 +174,7 @@ export const useDocumentsStore = defineStore('documents', () => {
         destinationCountry: onboarding.destinationCountry,
         visaType: onboarding.visaType,
         documents: uploadedDocuments.value,
+        answers: { ...answers.value },
       })
       lastApplicationId.value = applicationId
       isSubmitted.value = true
@@ -127,15 +187,11 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  function allRequiredUploaded(): boolean {
-    const required = requiredDocuments.value.filter((d) => d.required)
-    if (required.length === 0) return false
-    return required.every((req) => isDocumentUploaded(req.id))
-  }
-
   function reset() {
     requiredDocuments.value = []
     uploadedDocuments.value = []
+    visaQuestions.value = []
+    answers.value = {}
     isLoading.value = false
     isSubmitting.value = false
     error.value = null
@@ -146,6 +202,8 @@ export const useDocumentsStore = defineStore('documents', () => {
   function resetForNewApplication() {
     uploadedDocuments.value = []
     requiredDocuments.value = []
+    visaQuestions.value = []
+    answers.value = {}
     isSubmitted.value = false
     lastApplicationId.value = null
     error.value = null
@@ -154,15 +212,21 @@ export const useDocumentsStore = defineStore('documents', () => {
   return {
     requiredDocuments,
     uploadedDocuments,
+    visaQuestions,
+    answers,
     isLoading,
     isSubmitting,
     error,
     isSubmitted,
     lastApplicationId,
+    canFinalize,
     loadRequiredDocuments,
+    loadVisaQuestions,
+    setAnswer,
     uploadDocument,
     submitApplication,
     allRequiredUploaded,
+    allRequiredAnswered,
     isDocumentUploaded,
     reset,
     resetForNewApplication,

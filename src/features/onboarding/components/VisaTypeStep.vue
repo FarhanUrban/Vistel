@@ -34,7 +34,12 @@ function handleNext() {
 </script>
 
 <template>
-  <OnboardingLayout :current-step="1" :total-steps="4" title="What type of visa do you need?" @back="emit('back')">
+  <OnboardingLayout
+    :current-step="1"
+    :total-steps="4"
+    title="What type of visa do you need?"
+    @back="emit('back')"
+  >
     <AppOptionList v-model="selectedVisaType" :options="options" />
     <AppButton class="mt-6" full-width :disabled="!onboardingStore.visaType" @click="handleNext">
       Continue

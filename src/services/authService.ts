@@ -19,7 +19,11 @@ import {
   mockGetCurrentUser,
 } from './mocks/authMocks'
 
-function mapFirebaseUser(fbUser: { uid: string; email: string | null; displayName: string | null }): User {
+function mapFirebaseUser(fbUser: {
+  uid: string
+  email: string | null
+  displayName: string | null
+}): User {
   return {
     id: fbUser.uid,
     email: fbUser.email ?? '',

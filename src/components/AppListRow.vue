@@ -16,7 +16,9 @@ const emit = defineEmits<{
     type="button"
     class="flex w-full items-center gap-3 rounded-card border bg-white px-4 py-3 text-left transition-colors"
     :class="[
-      selected ? 'border-accent-blue ring-2 ring-accent-blue/20' : 'border-gray-200 hover:border-accent-blue/40',
+      selected
+        ? 'border-accent-blue ring-2 ring-accent-blue/20'
+        : 'border-gray-200 hover:border-accent-blue/40',
       disabled ? 'cursor-not-allowed opacity-50' : '',
     ]"
     :disabled="disabled"

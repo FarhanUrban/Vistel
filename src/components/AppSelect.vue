@@ -34,7 +34,7 @@ function handleChange(event: Event) {
     </label>
     <select
       :value="modelValue"
-      class="w-full px-4 py-2.5 rounded-control border border-gray-300 bg-white text-navy focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
+      class="w-full rounded-control border border-muted bg-white px-4 py-2.5 text-navy focus:border-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue/40"
       :class="{ 'border-red-500': error }"
       @change="handleChange"
     >

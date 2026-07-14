@@ -40,7 +40,9 @@ export async function mockGetApplications(userId: string): Promise<VisaApplicati
   return mockApplications.map((app) => ({ ...app, userId }))
 }
 
-export async function mockGetApplicationStatus(applicationId: string): Promise<VisaApplicationStatus> {
+export async function mockGetApplicationStatus(
+  applicationId: string,
+): Promise<VisaApplicationStatus> {
   console.info('[visaMocks] mockGetApplicationStatus', { applicationId })
   await delay(200)
   const app = mockApplications.find((a) => a.id === applicationId)

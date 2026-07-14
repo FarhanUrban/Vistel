@@ -11,12 +11,7 @@ export type PassportType = 'regular' | 'diplomatic' | 'official'
 export type PaymentStatus = 'idle' | 'processing' | 'success' | 'failed'
 
 export type VisaApplicationStatus =
-  | 'submitted'
-  | 'reviewing'
-  | 'awaiting_payment'
-  | 'payment_processing'
-  | 'completed'
-  | 'rejected'
+  'submitted' | 'reviewing' | 'awaiting_payment' | 'payment_processing' | 'completed' | 'rejected'
 
 export interface OnboardingData {
   visaType: VisaType | null
@@ -41,6 +36,17 @@ export interface RequiredDocument {
   name: string
   description: string
   required: boolean
+}
+
+export interface VisaQuestion {
+  id: string
+  label: string
+  type: 'text' | 'select' | 'date' | 'textarea' | 'radio'
+  required: boolean
+  options?: string[]
+  placeholder?: string
+  helpText?: string
+  category?: string
 }
 
 export interface UploadedDocument {
@@ -72,6 +78,7 @@ export interface VisaApplication {
   expiresAt?: string
   rejectionCode?: string
   documents?: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[]
+  answers?: Record<string, string>
 }
 
 export interface Interview {

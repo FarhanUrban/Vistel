@@ -3,13 +3,13 @@
     {
       "id": "passport",
       "name": "Passport",
-      "description": "Valid passport with at least 6 months validity",
+      "description": "Valid passport with at least 6 months remaining validity",
       "required": true
     },
     {
       "id": "photo",
       "name": "Passport Photo",
-      "description": "Recent passport-sized photo on white background",
+      "description": "Recent passport-sized photo on a plain background",
       "required": true
     }
   ],
@@ -17,13 +17,13 @@
     {
       "id": "passport",
       "name": "Passport",
-      "description": "Valid passport with at least 6 months validity",
+      "description": "Valid passport with at least 6 months remaining validity",
       "required": true
     },
     {
       "id": "photo",
       "name": "Passport Photo",
-      "description": "Recent passport-sized photo on white background",
+      "description": "Recent passport-sized photo on a plain background",
       "required": true
     },
     {
@@ -37,25 +37,505 @@
     {
       "id": "passport",
       "name": "Passport",
-      "description": "Valid passport with at least 6 months validity",
+      "description": "Valid passport with at least 6 months remaining validity",
       "required": true
     },
     {
       "id": "photo",
       "name": "Passport Photo",
-      "description": "Recent passport-sized photo on white background",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    }
+  ],
+  "TR_e-visa": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
       "required": true
     },
     {
       "id": "itinerary",
       "name": "Travel Itinerary",
       "description": "Flight bookings and accommodation details",
+      "required": false
+    }
+  ],
+  "IN_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
       "required": true
     },
     {
       "id": "bank_statement",
       "name": "Bank Statement",
-      "description": "Last 3 months bank statements showing sufficient funds",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    }
+  ],
+  "KE_e-visa": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    },
+    {
+      "id": "yellow_fever",
+      "name": "Yellow Fever Certificate",
+      "description": "WHO vaccination card if applicable",
+      "required": false
+    }
+  ],
+  "VN_e-visa": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    },
+    {
+      "id": "return_ticket",
+      "name": "Return Ticket",
+      "description": "Confirmed return or onward ticket",
+      "required": true
+    }
+  ],
+  "EG_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    }
+  ],
+  "TH_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "return_ticket",
+      "name": "Return Ticket",
+      "description": "Confirmed return or onward ticket",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    }
+  ],
+  "US_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "employment_letter",
+      "name": "Employment Letter",
+      "description": "Letter confirming job and leave approval",
+      "required": true
+    }
+  ],
+  "US_business": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "company_invite",
+      "name": "Company Invitation",
+      "description": "Invitation from destination company",
+      "required": true
+    },
+    {
+      "id": "employment_letter",
+      "name": "Employment Letter",
+      "description": "Letter confirming job and leave approval",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    }
+  ],
+  "GB_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    },
+    {
+      "id": "employment_letter",
+      "name": "Employment Letter",
+      "description": "Letter confirming job and leave approval",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    }
+  ],
+  "CA_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    },
+    {
+      "id": "invitation",
+      "name": "Invitation Letter",
+      "description": "Letter from host or company",
+      "required": true
+    }
+  ],
+  "AU_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "return_ticket",
+      "name": "Return Ticket",
+      "description": "Confirmed return or onward ticket",
+      "required": true
+    }
+  ],
+  "JP_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "employment_letter",
+      "name": "Employment Letter",
+      "description": "Letter confirming job and leave approval",
+      "required": true
+    }
+  ],
+  "FR_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "insurance",
+      "name": "Travel Insurance",
+      "description": "Policy covering medical emergencies",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
+      "required": true
+    }
+  ],
+  "DE_tourist": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "insurance",
+      "name": "Travel Insurance",
+      "description": "Policy covering medical emergencies",
+      "required": true
+    },
+    {
+      "id": "hotel_booking",
+      "name": "Hotel Booking",
+      "description": "Confirmed accommodation reservation",
+      "required": true
+    },
+    {
+      "id": "bank_statement",
+      "name": "Bank Statement",
+      "description": "Last 3 months showing sufficient funds",
+      "required": true
+    }
+  ],
+  "DE_business": [
+    {
+      "id": "passport",
+      "name": "Passport",
+      "description": "Valid passport with at least 6 months remaining validity",
+      "required": true
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "description": "Recent passport-sized photo on a plain background",
+      "required": true
+    },
+    {
+      "id": "company_invite",
+      "name": "Company Invitation",
+      "description": "Invitation from destination company",
+      "required": true
+    },
+    {
+      "id": "employment_letter",
+      "name": "Employment Letter",
+      "description": "Letter confirming job and leave approval",
+      "required": true
+    },
+    {
+      "id": "insurance",
+      "name": "Travel Insurance",
+      "description": "Policy covering medical emergencies",
+      "required": true
+    },
+    {
+      "id": "itinerary",
+      "name": "Travel Itinerary",
+      "description": "Flight bookings and trip outline",
       "required": true
     }
   ]

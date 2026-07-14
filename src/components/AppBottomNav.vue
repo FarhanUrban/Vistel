@@ -21,7 +21,9 @@ function navigate(path: string) {
 </script>
 
 <template>
-  <nav class="fixed bottom-0 left-0 right-0 border-t border-muted bg-surface safe-area-bottom lg:hidden">
+  <nav
+    class="fixed bottom-0 left-0 right-0 border-t border-muted bg-surface safe-area-bottom lg:hidden"
+  >
     <div class="mx-auto flex h-16 max-w-lg items-center justify-around">
       <button
         v-for="item in navItems"

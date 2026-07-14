@@ -15,7 +15,10 @@ const styles: Record<VisaRequirementCategory, string> = {
 </script>
 
 <template>
-  <span class="inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium" :class="styles[category]">
+  <span
+    class="inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium"
+    :class="styles[category]"
+  >
     <slot />
   </span>
 </template>

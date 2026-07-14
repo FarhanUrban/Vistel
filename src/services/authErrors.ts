@@ -7,7 +7,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
     'This sign-in method is disabled. Enable Google, Facebook, Microsoft, or Apple in Firebase Console → Authentication → Sign-in method.',
   'auth/unauthorized-domain':
     'This site domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.',
-  'auth/invalid-api-key': 'Invalid Firebase API key. Check VITE_FIREBASE_API_KEY in your .env file.',
+  'auth/invalid-api-key':
+    'Invalid Firebase API key. Check VITE_FIREBASE_API_KEY in your .env file.',
   'auth/invalid-email': 'Please enter a valid email address.',
   'auth/user-disabled': 'This account has been disabled.',
   'auth/user-not-found': 'No account found with this email.',

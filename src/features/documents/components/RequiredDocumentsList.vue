@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import AppCard from '@/components/AppCard.vue'
 import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
@@ -8,14 +8,18 @@ import AppModal from '@/components/AppModal.vue'
 import DocumentCaptureModal from '@/features/documents/components/DocumentCaptureModal.vue'
 import DocumentsCountryHeader from '@/features/documents/components/DocumentsCountryHeader.vue'
 import FinalizeDocumentsGate from '@/features/documents/components/FinalizeDocumentsGate.vue'
+import VisaQuestionnaire from '@/features/documents/components/VisaQuestionnaire.vue'
 import { useDocumentsStore } from '@/features/documents/store'
+import { useOnboardingStore } from '@/features/onboarding/store'
 
 const documentsStore = useDocumentsStore()
+const onboardingStore = useOnboardingStore()
 
 const emit = defineEmits<{
   finalize: []
 }>()
 
+const phase = ref<'documents' | 'questions'>('documents')
 const captureOpen = ref(false)
 const finalizeOpen = ref(false)
 const typePickerOpen = ref(false)
@@ -29,13 +33,25 @@ const typeOptions = computed(() => {
   const required = documentsStore.requiredDocuments.map((doc) => ({
     id: doc.id,
     name: doc.name,
-    hint: documentsStore.isDocumentUploaded(doc.id) ? 'Replace upload' : doc.required ? 'Required' : 'Optional',
+    hint: documentsStore.isDocumentUploaded(doc.id)
+      ? 'Replace upload'
+      : doc.required
+        ? 'Required'
+        : 'Optional',
   }))
   return [
     ...required,
     { id: 'additional', name: 'Additional document', hint: 'Optional supporting file' },
   ]
 })
+
+watch(
+  () => [onboardingStore.destinationCountry, onboardingStore.visaType] as const,
+  () => {
+    phase.value = 'documents'
+    finalizeOpen.value = false
+  },
+)
 
 onMounted(() => {
   documentsStore.loadRequiredDocuments()
@@ -93,7 +109,15 @@ async function handleUpload(file: File) {
   }
 }
 
+async function goToQuestions() {
+  await documentsStore.loadVisaQuestions()
+  if (!documentsStore.error) {
+    phase.value = 'questions'
+  }
+}
+
 function openFinalize() {
+  if (!documentsStore.canFinalize) return
   finalizeOpen.value = true
 }
 
@@ -107,99 +131,114 @@ function onFinalized() {
   <div>
     <DocumentsCountryHeader show-banner />
 
-    <h1 class="mb-2 text-2xl font-semibold text-navy lg:text-3xl">Required documents</h1>
-    <p class="mb-6 text-navy/60">
-      Upload each required document. Drop a file or click the scanner area to choose which type it is.
-    </p>
+    <template v-if="phase === 'documents'">
+      <h1 class="mb-2 text-2xl font-semibold text-navy lg:text-3xl">Required documents</h1>
+      <p class="mb-6 text-navy/60">
+        Upload each required document, then continue to country-specific application questions.
+      </p>
 
-    <AppErrorMessage v-if="documentsStore.error" :message="documentsStore.error" class="mb-4" />
+      <AppErrorMessage v-if="documentsStore.error" :message="documentsStore.error" class="mb-4" />
 
-    <!-- Embedded scanner / dropzone -->
-    <AppCard class="mb-6">
-      <div
-        class="rounded-control border-2 border-dashed px-4 py-10 text-center transition-colors"
-        :class="
-          dragActive
-            ? 'border-accent-orange bg-accent-orange/15'
-            : 'border-accent-blue/50 bg-accent-blue/5 hover:border-accent-blue'
-        "
-        @dragenter.prevent="dragActive = true"
-        @dragover.prevent="dragActive = true"
-        @dragleave.prevent="dragActive = false"
-        @drop="onDrop"
-      >
+      <AppCard class="mb-6">
         <div
-          class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-orange/25 text-navy"
+          class="rounded-control border-2 border-dashed px-4 py-10 text-center transition-colors"
+          :class="
+            dragActive
+              ? 'border-accent-orange bg-accent-orange/15'
+              : 'border-accent-blue/50 bg-accent-blue/5 hover:border-accent-blue'
+          "
+          @dragenter.prevent="dragActive = true"
+          @dragover.prevent="dragActive = true"
+          @dragleave.prevent="dragActive = false"
+          @drop="onDrop"
         >
-          <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-              d="M3 7h4l2-2h6l2 2h4v12H3V7zm9 3a4 4 0 100 8 4 4 0 000-8z"
-            />
-          </svg>
-        </div>
-        <p class="mb-1 font-medium text-navy">Scan or drop a document</p>
-        <p class="mb-4 text-sm text-navy/60">JPG, PNG, WEBP, or PDF up to 10MB</p>
-        <div class="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-          <AppButton :loading="documentsStore.isLoading" @click="openTypePicker()">
-            Choose file to upload
-          </AppButton>
-          <label class="cursor-pointer">
-            <span class="sr-only">Browse files</span>
-            <input type="file" class="hidden" accept="image/*,.pdf" @change="onFileInput" />
-          </label>
-        </div>
-      </div>
-    </AppCard>
-
-    <AppLoadingSpinner v-if="documentsStore.isLoading && documentsStore.requiredDocuments.length === 0" />
-
-    <ul v-else class="mb-6 space-y-3">
-      <li v-for="doc in documentsStore.requiredDocuments" :key="doc.id">
-        <AppCard padding="sm" class="cursor-pointer" @click="openCaptureForRow(doc)">
-          <div class="flex items-start gap-3">
-            <span
-              class="mt-0.5 rounded px-2 py-0.5 text-sm font-medium"
-              :class="
-                documentsStore.isDocumentUploaded(doc.id)
-                  ? 'bg-accent-blue/20 text-navy'
-                  : doc.required
-                    ? 'bg-accent-orange/25 text-navy'
-                    : 'bg-muted text-navy/60'
-              "
+          <div
+            class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent-orange/25 text-navy"
+          >
+            <svg
+              class="h-7 w-7"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
             >
-              {{
-                documentsStore.isDocumentUploaded(doc.id)
-                  ? 'Uploaded'
-                  : doc.required
-                    ? 'Required'
-                    : 'Optional'
-              }}
-            </span>
-            <div class="flex-1">
-              <p class="font-medium text-navy">{{ doc.name }}</p>
-              <p class="mt-0.5 text-sm text-navy/60">{{ doc.description }}</p>
-            </div>
-            <span class="text-sm font-medium text-accent-blue">Upload</span>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M3 7h4l2-2h6l2 2h4v12H3V7zm9 3a4 4 0 100 8 4 4 0 000-8z"
+              />
+            </svg>
           </div>
-        </AppCard>
-      </li>
-    </ul>
+          <p class="mb-1 font-medium text-navy">Scan or drop a document</p>
+          <p class="mb-4 text-sm text-navy/60">JPG, PNG, WEBP, or PDF up to 10MB</p>
+          <div class="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+            <AppButton :loading="documentsStore.isLoading" @click="openTypePicker()">
+              Choose file to upload
+            </AppButton>
+            <label class="cursor-pointer">
+              <span class="sr-only">Browse files</span>
+              <input type="file" class="hidden" accept="image/*,.pdf" @change="onFileInput" />
+            </label>
+          </div>
+        </div>
+      </AppCard>
 
-    <AppButton
-      full-width
-      :disabled="!documentsStore.allRequiredUploaded()"
-      @click="openFinalize"
-    >
-      Finalize E-Visa Application
-    </AppButton>
+      <AppLoadingSpinner
+        v-if="documentsStore.isLoading && documentsStore.requiredDocuments.length === 0"
+      />
+
+      <ul v-else class="mb-6 space-y-3">
+        <li v-for="doc in documentsStore.requiredDocuments" :key="doc.id">
+          <AppCard padding="sm" class="cursor-pointer" @click="openCaptureForRow(doc)">
+            <div class="flex items-start gap-3">
+              <span
+                class="mt-0.5 rounded px-2 py-0.5 text-sm font-medium"
+                :class="
+                  documentsStore.isDocumentUploaded(doc.id)
+                    ? 'bg-accent-blue/20 text-navy'
+                    : doc.required
+                      ? 'bg-accent-orange/25 text-navy'
+                      : 'bg-muted text-navy/60'
+                "
+              >
+                {{
+                  documentsStore.isDocumentUploaded(doc.id)
+                    ? 'Uploaded'
+                    : doc.required
+                      ? 'Required'
+                      : 'Optional'
+                }}
+              </span>
+              <div class="flex-1">
+                <p class="font-medium text-navy">{{ doc.name }}</p>
+                <p class="mt-0.5 text-sm text-navy/60">{{ doc.description }}</p>
+              </div>
+              <span class="text-sm font-medium text-accent-blue">Upload</span>
+            </div>
+          </AppCard>
+        </li>
+      </ul>
+
+      <AppButton
+        full-width
+        variant="secondary"
+        :disabled="!documentsStore.allRequiredUploaded()"
+        :loading="documentsStore.isLoading"
+        @click="goToQuestions"
+      >
+        Continue to Application Questions
+      </AppButton>
+    </template>
+
+    <VisaQuestionnaire
+      v-else
+      @back="phase = 'documents'"
+      @continue="openFinalize"
+    />
 
     <AppModal :open="typePickerOpen" title="What document is this?" @close="typePickerOpen = false">
-      <p class="mb-4 text-sm text-navy/60">
-        Pick the type so only that item is marked uploaded.
-      </p>
+      <p class="mb-4 text-sm text-navy/60">Pick the type so only that item is marked uploaded.</p>
       <ul class="mb-4 max-h-64 space-y-2 overflow-y-auto">
         <li v-for="option in typeOptions" :key="option.id">
           <button

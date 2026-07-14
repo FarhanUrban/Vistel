@@ -33,7 +33,11 @@ function handleContinue() {
   >
     <p class="mb-2 text-sm text-gray-500">
       Visa requirements are based on your
-      {{ onboardingStore.passportCountry ? getCountryName(onboardingStore.passportCountry) : 'passport' }}.
+      {{
+        onboardingStore.passportCountry
+          ? getCountryName(onboardingStore.passportCountry)
+          : 'passport'
+      }}.
     </p>
     <button
       v-if="onboardingStore.passportCountry"

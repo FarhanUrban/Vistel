@@ -1,5 +1,5 @@
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-import type { RequiredDocument, UploadedDocument, VisaType } from '@/types'
+import type { RequiredDocument, UploadedDocument, VisaQuestion, VisaType } from '@/types'
 import { useMockServices, useFirebaseDocumentStorage } from './config'
 import { getFirebaseStorage } from './api'
 import { iso2ToLegacySlug } from './visaIndexService'
@@ -9,17 +9,16 @@ import {
   pretendUploadDocument,
   saveLocalApplication,
 } from './localDocumentStorage'
-import {
-  mockGetRequiredDocuments,
-  mockSubmitApplication,
-} from './mocks/documentsMocks'
+import { mockSubmitApplication } from './mocks/documentsMocks'
 import requiredDocsData from './data/requiredDocuments.json'
+import visaQuestionsData from './data/visaQuestions.json'
 
 export interface SubmitApplicationInput {
   userId: string
   destinationCountry: string
   visaType: VisaType
   documents: UploadedDocument[]
+  answers: Record<string, string>
 }
 
 function sanitizeStorageFileName(name: string): string {
@@ -40,11 +39,29 @@ function formatStorageError(error: unknown): string {
   return message || 'Upload failed'
 }
 
+function lookupByCountryVisa<T>(
+  data: Record<string, T>,
+  destinationCountry: string,
+  visaType: VisaType,
+): T | undefined {
+  const iso = destinationCountry.toUpperCase()
+  const isoKey = `${iso}_${visaType}`
+  if (data[isoKey]) return data[isoKey]
+
+  const legacySlug =
+    destinationCountry.length === 2
+      ? iso2ToLegacySlug(destinationCountry)
+      : destinationCountry.toLowerCase()
+  const legacyKey = `${legacySlug}_${visaType}`
+  if (data[legacyKey]) return data[legacyKey]
+
+  return undefined
+}
+
 export async function getUserDocuments(
   userId: string,
   scope?: DocumentScope,
 ): Promise<UploadedDocument[]> {
-  // Always prefer scoped local storage (mock + local backend)
   return getStoredDocuments(userId, scope)
 }
 
@@ -52,17 +69,24 @@ export async function getRequiredDocuments(
   destinationCountry: string,
   visaType: VisaType,
 ): Promise<RequiredDocument[]> {
-  if (useMockServices()) {
-    return mockGetRequiredDocuments(destinationCountry, visaType)
-  }
-  const legacySlug =
-    destinationCountry.length === 2
-      ? iso2ToLegacySlug(destinationCountry)
-      : destinationCountry.toLowerCase()
-  const key = `${legacySlug}_${visaType}`
-  const docs = (requiredDocsData as Record<string, RequiredDocument[]>)[key]
-  if (docs) return docs
-  return (requiredDocsData as Record<string, RequiredDocument[]>).default ?? []
+  const table = requiredDocsData as Record<string, RequiredDocument[]>
+  return (
+    lookupByCountryVisa(table, destinationCountry, visaType) ??
+    table.default ??
+    []
+  )
+}
+
+export async function getVisaQuestions(
+  destinationCountry: string,
+  visaType: VisaType,
+): Promise<VisaQuestion[]> {
+  const table = visaQuestionsData as Record<string, VisaQuestion[]>
+  return (
+    lookupByCountryVisa(table, destinationCountry, visaType) ??
+    table.default ??
+    []
+  )
 }
 
 export async function uploadDocument(
@@ -75,12 +99,7 @@ export async function uploadDocument(
     throw new Error('Document type is required')
   }
 
-  if (useMockServices()) {
-    const uploaded = await pretendUploadDocument(file, userId, documentTypeId, scope)
-    return uploaded
-  }
-
-  if (!useFirebaseDocumentStorage()) {
+  if (useMockServices() || !useFirebaseDocumentStorage()) {
     return pretendUploadDocument(file, userId, documentTypeId, scope)
   }
 
@@ -91,7 +110,6 @@ export async function uploadDocument(
   try {
     await uploadBytes(ref, file)
     const url = await getDownloadURL(ref)
-    // Also mirror locally for UI status while using cloud storage
     await pretendUploadDocument(file, userId, documentTypeId, scope)
     return {
       id: path,
@@ -115,22 +133,16 @@ export async function submitApplication(input: SubmitApplicationInput): Promise<
     documentTypeId: doc.documentTypeId,
   }))
 
-  if (useMockServices()) {
-    await mockSubmitApplication(`app-${Date.now()}`)
+  if (useMockServices() || !useFirebaseDocumentStorage()) {
+    if (useMockServices()) {
+      await mockSubmitApplication(`app-${Date.now()}`)
+    }
     return saveLocalApplication(
       input.userId,
       input.destinationCountry,
       input.visaType,
       documentMeta,
-    )
-  }
-
-  if (!useFirebaseDocumentStorage()) {
-    return saveLocalApplication(
-      input.userId,
-      input.destinationCountry,
-      input.visaType,
-      documentMeta,
+      input.answers,
     )
   }
 
@@ -143,6 +155,7 @@ export async function submitApplication(input: SubmitApplicationInput): Promise<
     destinationCountry: input.destinationCountry,
     visaType: input.visaType,
     submittedAt: new Date().toISOString(),
+    answers: input.answers,
     documents: input.documents.map((doc) => ({
       id: doc.id,
       name: doc.name,

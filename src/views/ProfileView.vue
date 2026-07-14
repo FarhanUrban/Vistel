@@ -65,8 +65,12 @@ async function handleDeleteAccount() {
 
     <AppCard class="mb-4">
       <p class="text-sm text-gray-500">Signed in as</p>
-      <p class="mt-1 font-medium text-navy">{{ authStore.user?.displayName || authStore.user?.email }}</p>
-      <p v-if="authStore.user?.displayName" class="text-sm text-gray-500">{{ authStore.user?.email }}</p>
+      <p class="mt-1 font-medium text-navy">
+        {{ authStore.user?.displayName || authStore.user?.email }}
+      </p>
+      <p v-if="authStore.user?.displayName" class="text-sm text-gray-500">
+        {{ authStore.user?.email }}
+      </p>
     </AppCard>
 
     <AppCard class="mb-4 space-y-3">
@@ -88,12 +92,15 @@ async function handleDeleteAccount() {
     </AppCard>
 
     <p class="text-center text-sm text-gray-500">
-      <RouterLink to="/about" class="text-accent-blue font-medium hover:underline">About Vislet</RouterLink>
+      <RouterLink to="/about" class="text-accent-blue font-medium hover:underline"
+        >About Vislet</RouterLink
+      >
     </p>
 
     <AppModal :open="showDeleteModal" title="Delete account" @close="showDeleteModal = false">
       <p class="text-sm text-gray-600">
-        This wipes all local data and permanently deletes your sign-in. You will start completely fresh.
+        This wipes all local data and permanently deletes your sign-in. You will start completely
+        fresh.
       </p>
 
       <AppErrorMessage v-if="authStore.error" :message="authStore.error" class="mt-4" />

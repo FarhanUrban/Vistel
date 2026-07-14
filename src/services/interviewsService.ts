@@ -24,9 +24,7 @@ export async function getInterviews(userId: string): Promise<Interview[]> {
   const { collection, getDocs, query, where } = await import('firebase/firestore')
   const { getFirestoreDb } = await import('./api')
   const db = getFirestoreDb()
-  const snapshot = await getDocs(
-    query(collection(db, 'interviews'), where('userId', '==', userId)),
-  )
+  const snapshot = await getDocs(query(collection(db, 'interviews'), where('userId', '==', userId)))
   return snapshot.docs.map((d) => mapInterviewDoc(d.id, d.data()))
 }
 

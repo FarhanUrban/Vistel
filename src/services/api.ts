@@ -53,7 +53,9 @@ function getFirebaseConfig(): FirebaseOptions {
 
 export function getFirebaseApp(): FirebaseApp {
   if (useMockServices()) {
-    throw new Error('Firebase is disabled in mock mode. Set VITE_USE_MOCK_SERVICES=false to use Firebase.')
+    throw new Error(
+      'Firebase is disabled in mock mode. Set VITE_USE_MOCK_SERVICES=false to use Firebase.',
+    )
   }
   if (!app) {
     app = initializeApp(getFirebaseConfig())
@@ -71,7 +73,9 @@ export function getFirebaseAuth(): Auth {
 /** Initializes Auth with local persistence (required for hosted session restore). */
 export async function initFirebaseAuth(): Promise<Auth> {
   if (useMockServices()) {
-    throw new Error('Firebase is disabled in mock mode. Set VITE_USE_MOCK_SERVICES=false to use Firebase.')
+    throw new Error(
+      'Firebase is disabled in mock mode. Set VITE_USE_MOCK_SERVICES=false to use Firebase.',
+    )
   }
   if (authInitPromise) return authInitPromise
 

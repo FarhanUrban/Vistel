@@ -2,11 +2,7 @@ import csvText from './data/passport-index-tidy-iso2.csv?raw'
 import officialVisaLinks from './data/officialVisaLinks.json'
 
 export type VisaRequirementCategory =
-  | 'visa-free'
-  | 'e-visa'
-  | 'eta'
-  | 'visa-required'
-  | 'no-admission'
+  'visa-free' | 'e-visa' | 'eta' | 'visa-required' | 'no-admission'
 
 export interface NormalizedVisaRequirement {
   category: VisaRequirementCategory
