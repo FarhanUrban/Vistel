@@ -23,7 +23,9 @@ function mapApplicationDoc(id: string, data: Record<string, unknown>): VisaAppli
     submittedAt: data.submittedAt as string,
     reviewedAt: data.reviewedAt as string | undefined,
     paidAt: data.paidAt as string | undefined,
+    expiresAt: data.expiresAt as string | undefined,
     rejectionCode: data.rejectionCode as string | undefined,
+    answers: data.answers as VisaApplication['answers'],
     documents: data.documents as VisaApplication['documents'],
   }
 }
@@ -91,7 +93,9 @@ export async function getApplicationStatus(applicationId: string): Promise<VisaA
   return snapshot.data().status as VisaApplicationStatus
 }
 
-export async function pollApplicationStatus(applicationId: string): Promise<VisaApplication | null> {
+export async function pollApplicationStatus(
+  applicationId: string,
+): Promise<VisaApplication | null> {
   if (useMockServices()) {
     const local = getLocalApplicationById(applicationId)
     if (local) return local

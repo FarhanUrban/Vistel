@@ -14,7 +14,9 @@ onMounted(() => {
 <template>
   <div>
     <h1 class="text-2xl font-semibold text-navy mb-2">Possible rejection reasons</h1>
-    <p class="text-gray-500 mb-6">Common reasons visa applications get rejected. Avoid these to improve your chances.</p>
+    <p class="text-gray-500 mb-6">
+      Common reasons visa applications get rejected. Avoid these to improve your chances.
+    </p>
 
     <ul class="space-y-3">
       <li v-for="reason in rejectionsStore.possibleReasons" :key="reason.code">

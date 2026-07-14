@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { FeeBreakdown, PaymentStatus, VisaApplication } from '@/types'
 import * as paymentsService from '@/services/paymentsService'
 import { getApplication, updateApplication } from '@/services/visaService'
+import { visaExpiryFromPaidAt } from '@/services/localDocumentStorage'
 
 export const usePaymentsStore = defineStore('payments', () => {
   const feeBreakdown = ref<FeeBreakdown | null>(null)
@@ -61,9 +62,12 @@ export const usePaymentsStore = defineStore('payments', () => {
       const result = await paymentsService.processPayment(selectedMethod.value)
       transactionId.value = result.transactionId
       await new Promise((resolve) => setTimeout(resolve, 1500))
+      const paidAt = new Date().toISOString()
+      const app = checkoutApplication.value
       await updateApplication(applicationId.value, {
         status: 'completed',
-        paidAt: new Date().toISOString(),
+        paidAt,
+        expiresAt: app ? visaExpiryFromPaidAt(paidAt, app.visaType) : undefined,
       })
       status.value = 'success'
     } catch (e) {

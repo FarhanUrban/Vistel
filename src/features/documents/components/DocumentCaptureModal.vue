@@ -89,7 +89,11 @@ function openCamera() {
           </li>
         </ul>
 
-        <AppErrorMessage v-if="error || localError" :message="error || localError || ''" class="mb-4" />
+        <AppErrorMessage
+          v-if="error || localError"
+          :message="error || localError || ''"
+          class="mb-4"
+        />
 
         <input
           ref="fileInput"

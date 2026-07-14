@@ -12,7 +12,7 @@ const emit = defineEmits<{
 <template>
   <div class="relative">
     <svg
-      class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+      class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-navy/40"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -29,7 +29,7 @@ const emit = defineEmits<{
       type="search"
       :value="modelValue"
       :placeholder="placeholder ?? 'Search'"
-      class="w-full rounded-control border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-navy placeholder:text-gray-400 focus:border-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
+      class="w-full rounded-control border border-muted bg-white py-2.5 pl-10 pr-4 text-navy placeholder:text-navy/40 focus:border-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue/30"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
   </div>

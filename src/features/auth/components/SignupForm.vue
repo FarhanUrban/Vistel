@@ -45,10 +45,17 @@ function handleSocialSuccess() {
 <template>
   <AuthLayout>
     <AppCard>
-      <div class="text-center mb-6">
+      <div class="mb-6 text-center">
+        <button
+          type="button"
+          class="mb-4 text-sm font-medium text-accent-blue hover:underline"
+          @click="router.push({ name: 'Landing' })"
+        >
+          ← Back
+        </button>
         <AppLogo />
-        <h1 class="text-2xl font-semibold text-navy mt-4">Create account</h1>
-        <p class="text-gray-500 mt-1">Start your visa application today</p>
+        <h1 class="mt-4 text-2xl font-semibold text-navy">Create account</h1>
+        <p class="mt-1 text-navy/60">Start your visa application today</p>
       </div>
 
       <AppErrorMessage v-if="authStore.error" :message="authStore.error" class="mb-4" />
@@ -63,14 +70,16 @@ function handleSocialSuccess() {
           placeholder="••••••••"
           :error="passwordError"
         />
-        <AppButton type="submit" full-width :loading="authStore.isLoading">Create Account</AppButton>
+        <AppButton type="submit" full-width :loading="authStore.isLoading"
+          >Create Account</AppButton
+        >
       </form>
 
       <SocialSignInButtons @success="handleSocialSuccess" />
 
-      <p class="text-center text-sm text-gray-500 mt-6">
+      <p class="mt-6 text-center text-sm text-navy/60">
         Already have an account?
-        <RouterLink to="/login" class="text-accent-blue font-medium">Log in</RouterLink>
+        <RouterLink to="/login" class="font-medium text-accent-blue">Log in</RouterLink>
       </p>
     </AppCard>
   </AuthLayout>

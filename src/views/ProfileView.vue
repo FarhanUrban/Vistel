@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/layouts/AppShell.vue'
 import AppCard from '@/components/AppCard.vue'
 import AppPageHeader from '@/components/AppPageHeader.vue'
 import AppButton from '@/components/AppButton.vue'
+import AppModal from '@/components/AppModal.vue'
+import AppInput from '@/components/AppInput.vue'
+import AppErrorMessage from '@/components/AppErrorMessage.vue'
 import { useAuthStore } from '@/features/auth/store'
 import { getFirebaseAuth } from '@/services/api'
 import { useMockServices } from '@/services/config'
@@ -11,8 +15,6 @@ import { useMockServices } from '@/services/config'
 const router = useRouter()
 const authStore = useAuthStore()
 
-<<<<<<< Updated upstream
-=======
 const showDeleteModal = ref(false)
 const deleteConfirmText = ref('')
 const deletePassword = ref('')
@@ -35,10 +37,25 @@ function openDeleteModal() {
   showDeleteModal.value = true
 }
 
->>>>>>> Stashed changes
 async function handleLogout() {
   await authStore.logout()
   router.push({ name: 'Welcome' })
+}
+
+async function handleResetAppData() {
+  await authStore.resetAppData()
+  router.push({ name: 'Welcome' })
+}
+
+async function handleDeleteAccount() {
+  if (!canDelete.value) return
+  try {
+    await authStore.deleteAccount(isEmailUser.value ? deletePassword.value : undefined)
+    showDeleteModal.value = false
+    router.push({ name: 'Welcome' })
+  } catch {
+    // Error surfaced via authStore.error
+  }
 }
 </script>
 
@@ -48,15 +65,16 @@ async function handleLogout() {
 
     <AppCard class="mb-4">
       <p class="text-sm text-gray-500">Signed in as</p>
-      <p class="mt-1 font-medium text-navy">{{ authStore.user?.displayName || authStore.user?.email }}</p>
-      <p v-if="authStore.user?.displayName" class="text-sm text-gray-500">{{ authStore.user?.email }}</p>
+      <p class="mt-1 font-medium text-navy">
+        {{ authStore.user?.displayName || authStore.user?.email }}
+      </p>
+      <p v-if="authStore.user?.displayName" class="text-sm text-gray-500">
+        {{ authStore.user?.email }}
+      </p>
     </AppCard>
 
     <AppCard class="mb-4 space-y-3">
       <AppButton variant="outline" full-width @click="handleLogout">Log out</AppButton>
-<<<<<<< Updated upstream
-      <p class="text-center text-xs text-gray-400">Account deletion is not available.</p>
-=======
       <AppButton variant="outline" full-width @click="handleResetAppData">
         Reset app data &amp; restart onboarding
       </AppButton>
@@ -71,18 +89,18 @@ async function handleLogout() {
       <p class="text-center text-xs text-gray-400">
         Reset clears local data and signs you out. Delete also removes your Firebase sign-in.
       </p>
->>>>>>> Stashed changes
     </AppCard>
 
     <p class="text-center text-sm text-gray-500">
-      <RouterLink to="/about" class="text-accent-blue font-medium hover:underline">About Vislet</RouterLink>
+      <RouterLink to="/about" class="text-accent-blue font-medium hover:underline"
+        >About Vislet</RouterLink
+      >
     </p>
-<<<<<<< Updated upstream
-=======
 
     <AppModal :open="showDeleteModal" title="Delete account" @close="showDeleteModal = false">
       <p class="text-sm text-gray-600">
-        This wipes all local data and permanently deletes your sign-in. You will start completely fresh.
+        This wipes all local data and permanently deletes your sign-in. You will start completely
+        fresh.
       </p>
 
       <AppErrorMessage v-if="authStore.error" :message="authStore.error" class="mt-4" />
@@ -114,6 +132,5 @@ async function handleLogout() {
         </AppButton>
       </div>
     </AppModal>
->>>>>>> Stashed changes
   </AppShell>
 </template>

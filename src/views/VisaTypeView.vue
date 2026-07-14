@@ -15,7 +15,7 @@ function goBack() {
     router.push({ name: 'Dashboard' })
     return
   }
-  router.push({ name: 'Signup' })
+  router.push({ name: 'Welcome' })
 }
 </script>
 

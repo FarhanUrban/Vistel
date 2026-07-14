@@ -83,7 +83,10 @@ function closeMobileDetail() {
               <CountryFlag :iso2="country.iso2" />
             </template>
             <template v-if="mode === 'destination' && passportIso2" #trailing>
-              <AppBadge v-if="requirementFor(country.iso2)" :category="requirementFor(country.iso2)!.category">
+              <AppBadge
+                v-if="requirementFor(country.iso2)"
+                :category="requirementFor(country.iso2)!.category"
+              >
                 {{ requirementFor(country.iso2)!.label }}
               </AppBadge>
             </template>

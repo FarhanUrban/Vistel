@@ -15,11 +15,11 @@ const labels: Record<VisaApplicationStatus, string> = {
 }
 
 const styles: Record<VisaApplicationStatus, string> = {
-  submitted: 'bg-gray-100 text-gray-600',
-  reviewing: 'bg-accent-orange/20 text-navy',
-  awaiting_payment: 'bg-accent-blue/15 text-navy',
-  payment_processing: 'bg-accent-orange/20 text-navy',
-  completed: 'bg-green-100 text-green-700',
+  submitted: 'bg-muted text-navy/70',
+  reviewing: 'bg-accent-orange/25 text-navy',
+  awaiting_payment: 'bg-accent-blue/20 text-navy',
+  payment_processing: 'bg-accent-orange/25 text-navy',
+  completed: 'bg-accent-blue/25 text-navy',
   rejected: 'bg-red-100 text-red-700',
 }
 </script>

@@ -9,7 +9,9 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/welcome',
+      name: 'Landing',
+      component: () => import('@/views/LandingView.vue'),
+      meta: { title: 'Vislet - Simplified Visa Applications' },
     },
     {
       path: '/welcome',
@@ -59,9 +61,7 @@ const router = createRouter({
     },
     {
       path: '/documents/scan',
-      name: 'DocumentScan',
-      component: () => import('@/views/DocumentScanView.vue'),
-      meta: { title: 'Scan Documents', requiresAuth: true },
+      redirect: { name: 'RequiredDocuments' },
     },
     {
       path: '/documents/required-list',

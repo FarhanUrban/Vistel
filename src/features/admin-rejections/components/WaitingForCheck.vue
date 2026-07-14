@@ -17,7 +17,9 @@ async function handleCheckStatus() {
 <template>
   <div>
     <h1 class="text-2xl font-semibold text-navy mb-2">Waiting for E-Visa check</h1>
-    <p class="text-gray-500 mb-6">Your application is being reviewed. This usually takes 3–5 business days.</p>
+    <p class="text-gray-500 mb-6">
+      Your application is being reviewed. This usually takes 3–5 business days.
+    </p>
 
     <AppCard class="text-center mb-6">
       <div class="py-6">
@@ -35,7 +37,9 @@ async function handleCheckStatus() {
 
     <AppCard v-if="rejectionsStore.currentApplication" class="mt-4" padding="sm">
       <p class="text-sm text-gray-500">Current status</p>
-      <p class="font-medium text-navy capitalize">{{ rejectionsStore.currentApplication.status }}</p>
+      <p class="font-medium text-navy capitalize">
+        {{ rejectionsStore.currentApplication.status }}
+      </p>
     </AppCard>
   </div>
 </template>

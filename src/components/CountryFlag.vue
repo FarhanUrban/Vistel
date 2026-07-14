@@ -21,7 +21,9 @@ const sizeClass = {
 </script>
 
 <template>
-  <span class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted/40">
+  <span
+    class="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted/40"
+  >
     <img
       v-if="!failed"
       :src="flagImageUrl(iso2)"
@@ -31,7 +33,11 @@ const sizeClass = {
       loading="lazy"
       @error="failed = true"
     />
-    <span v-else :class="size === 'sm' ? 'text-base' : size === 'lg' ? 'text-2xl' : 'text-xl'" aria-hidden="true">
+    <span
+      v-else
+      :class="size === 'sm' ? 'text-base' : size === 'lg' ? 'text-2xl' : 'text-xl'"
+      aria-hidden="true"
+    >
       {{ iso2ToFlag(iso2) }}
     </span>
   </span>

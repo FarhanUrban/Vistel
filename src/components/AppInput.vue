@@ -27,7 +27,7 @@ function handleInput(event: Event) {
 
 <template>
   <div class="w-full">
-    <label v-if="label" class="block text-sm font-medium text-navy mb-1.5">
+    <label v-if="label" class="mb-1.5 block text-sm font-medium text-navy">
       {{ label }}
     </label>
     <input
@@ -35,7 +35,7 @@ function handleInput(event: Event) {
       :value="modelValue"
       :placeholder="placeholder"
       :disabled="disabled"
-      class="w-full px-4 py-2.5 rounded-control border border-gray-300 bg-white text-navy placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent disabled:bg-gray-100"
+      class="w-full rounded-control border border-muted bg-white px-4 py-2.5 text-navy placeholder:text-navy/40 focus:border-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue/40 disabled:bg-muted/40 disabled:text-navy/50"
       :class="{ 'border-red-500': error }"
       @input="handleInput"
     />
