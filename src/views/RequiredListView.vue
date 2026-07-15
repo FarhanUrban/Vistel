@@ -10,7 +10,7 @@ const documentsStore = useDocumentsStore()
 function goToConfirmation() {
   const applicationId = documentsStore.lastApplicationId
   if (applicationId) {
-    router.push({ name: 'DocumentConfirmation', query: { applicationId } })
+    router.push({ name: 'Dashboard', query: { newlySubmittedAppId: applicationId } })
   }
 }
 </script>

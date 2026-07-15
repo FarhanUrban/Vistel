@@ -231,11 +231,7 @@ function onFinalized() {
       </AppButton>
     </template>
 
-    <VisaQuestionnaire
-      v-else
-      @back="phase = 'documents'"
-      @continue="openFinalize"
-    />
+    <VisaQuestionnaire v-else @back="phase = 'documents'" @continue="openFinalize" />
 
     <AppModal :open="typePickerOpen" title="What document is this?" @close="typePickerOpen = false">
       <p class="mb-4 text-sm text-navy/60">Pick the type so only that item is marked uploaded.</p>

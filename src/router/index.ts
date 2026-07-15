@@ -100,6 +100,12 @@ const router = createRouter({
       meta: { title: 'About Us' },
     },
     {
+      path: '/qa',
+      name: 'QA',
+      component: () => import('@/views/QAView.vue'),
+      meta: { title: 'Q&A Help Center' },
+    },
+    {
       path: '/profile',
       name: 'Profile',
       component: () => import('@/views/ProfileView.vue'),

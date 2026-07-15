@@ -8,7 +8,7 @@ import {
   getVisaRequirement,
   normalizeRequirement,
   getCountryName,
-  iso2ToFlag
+  iso2ToFlag,
 } from '@/services/visaIndexService'
 import AppLogo from '@/components/AppLogo.vue'
 import AppButton from '@/components/AppButton.vue'
@@ -77,9 +77,26 @@ function handleTrack() {
           <AppLogo />
         </div>
         <nav class="hidden items-center gap-8 md:flex">
-          <a href="#features" class="text-sm font-medium text-navy/70 hover:text-navy transition-colors">Features</a>
-          <a href="#estimator" class="text-sm font-medium text-navy/70 hover:text-navy transition-colors">Visa Checker</a>
-          <a href="#how-it-works" class="text-sm font-medium text-navy/70 hover:text-navy transition-colors">How It Works</a>
+          <a
+            href="#features"
+            class="text-sm font-medium text-navy/70 hover:text-navy transition-colors"
+            >Features</a
+          >
+          <a
+            href="#estimator"
+            class="text-sm font-medium text-navy/70 hover:text-navy transition-colors"
+            >Visa Checker</a
+          >
+          <a
+            href="#how-it-works"
+            class="text-sm font-medium text-navy/70 hover:text-navy transition-colors"
+            >How It Works</a
+          >
+          <RouterLink
+            to="/qa"
+            class="text-sm font-medium text-navy/70 hover:text-navy transition-colors"
+            >Q&A Help</RouterLink
+          >
         </nav>
         <div class="flex items-center gap-3">
           <AppButton variant="outline" size="sm" @click="handleTrack">
@@ -97,16 +114,25 @@ function handleTrack() {
       <div class="mx-auto max-w-7xl lg:grid lg:grid-cols-12 lg:gap-12 items-center">
         <!-- Hero Text -->
         <div class="lg:col-span-6 space-y-6 text-center lg:text-left">
-          <div class="inline-flex items-center gap-2 rounded-full bg-accent-orange/15 px-3 py-1 text-xs font-semibold text-navy">
+          <div
+            class="inline-flex items-center gap-2 rounded-full bg-accent-orange/15 px-3 py-1 text-xs font-semibold text-navy"
+          >
             <span class="flex h-2 w-2 rounded-full bg-accent-orange animate-pulse"></span>
             Seamless Visa Logistics
           </div>
-          <h1 class="font-display text-4xl font-extrabold tracking-tight text-navy sm:text-5xl lg:text-6xl leading-tight">
+          <h1
+            class="font-display text-4xl font-extrabold tracking-tight text-navy sm:text-5xl lg:text-6xl leading-tight"
+          >
             Visa applications,<br />
-            <span class="text-accent-blue bg-gradient-to-r from-accent-blue to-navy bg-clip-text text-transparent">simplified.</span>
+            <span
+              class="text-accent-blue bg-gradient-to-r from-accent-blue to-navy bg-clip-text text-transparent"
+              >simplified.</span
+            >
           </h1>
           <p class="mx-auto max-w-2xl text-lg text-navy/70 lg:mx-0">
-            Tell Vislet where you're going and we'll tell you what documents you need, scan your passport, handle secure mock checkout, and track consulate approval from a single dashboard.
+            Tell Vislet where you're going and we'll tell you what documents you need, scan your
+            passport, handle secure mock checkout, and track consulate approval from a single
+            dashboard.
           </p>
           <div class="flex flex-col gap-3 justify-center sm:flex-row lg:justify-start pt-2">
             <AppButton variant="primary" size="lg" @click="handleGetStarted">
@@ -121,7 +147,9 @@ function handleTrack() {
         <!-- Hero Graphic -->
         <div class="mt-16 lg:mt-0 lg:col-span-6 flex justify-center">
           <div class="relative w-full max-w-md lg:max-w-xl group">
-            <div class="absolute inset-0 -m-4 bg-gradient-to-tr from-accent-blue/20 to-accent-orange/20 blur-3xl opacity-60 rounded-full group-hover:scale-105 transition-transform duration-700"></div>
+            <div
+              class="absolute inset-0 -m-4 bg-gradient-to-tr from-accent-blue/20 to-accent-orange/20 blur-3xl opacity-60 rounded-full group-hover:scale-105 transition-transform duration-700"
+            ></div>
           </div>
         </div>
       </div>
@@ -140,7 +168,9 @@ function handleTrack() {
         </div>
 
         <!-- Estimator Card -->
-        <div class="bg-white/10 backdrop-blur-md border border-white/10 p-6 sm:p-8 rounded-card shadow-xl space-y-6">
+        <div
+          class="bg-white/10 backdrop-blur-md border border-white/10 p-6 sm:p-8 rounded-card shadow-xl space-y-6"
+        >
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <!-- Passport select -->
             <div class="space-y-2">
@@ -152,7 +182,9 @@ function handleTrack() {
                 v-model="passportIso2"
                 class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-blue rounded-control p-3 text-surface font-medium outline-none transition-colors"
               >
-                <option value="" disabled selected class="bg-navy text-surface/50">Select your country</option>
+                <option value="" disabled selected class="bg-navy text-surface/50">
+                  Select your country
+                </option>
                 <option
                   v-for="country in countries"
                   :key="country.iso2"
@@ -175,7 +207,9 @@ function handleTrack() {
                 :disabled="!passportIso2"
                 class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-blue rounded-control p-3 text-surface font-medium outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <option value="" disabled selected class="bg-navy text-surface/50">Select destination</option>
+                <option value="" disabled selected class="bg-navy text-surface/50">
+                  Select destination
+                </option>
                 <option
                   v-for="country in destinationCountries"
                   :key="country.iso2"
@@ -191,15 +225,20 @@ function handleTrack() {
           <!-- Result Panel -->
           <Transition name="fade">
             <div v-if="requirement" class="mt-6 border-t border-white/10 pt-6 space-y-4">
-              <div class="flex items-center gap-4 bg-white/5 rounded-control p-4 border border-white/5">
+              <div
+                class="flex items-center gap-4 bg-white/5 rounded-control p-4 border border-white/5"
+              >
                 <div class="text-4xl shrink-0">
                   {{ iso2ToFlag(destinationIso2) }}
                 </div>
                 <div class="min-w-0">
-                  <span class="text-xs uppercase font-semibold text-accent-orange tracking-wider">Estimate Result</span>
+                  <span class="text-xs uppercase font-semibold text-accent-orange tracking-wider"
+                    >Estimate Result</span
+                  >
                   <h3 class="text-xl font-bold text-surface">{{ requirement.label }}</h3>
                   <p class="text-xs text-surface/60 mt-1">
-                    Traveling to {{ getCountryName(destinationIso2) }} with a passport from {{ getCountryName(passportIso2) }}.
+                    Traveling to {{ getCountryName(destinationIso2) }} with a passport from
+                    {{ getCountryName(passportIso2) }}.
                   </p>
                 </div>
               </div>
@@ -238,7 +277,9 @@ function handleTrack() {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <!-- Feature 1 -->
         <AppCard class="hover:border-accent-blue/50 transition-colors duration-300">
-          <div class="h-12 w-12 rounded-lg bg-accent-blue/10 flex items-center justify-center text-accent-blue text-2xl mb-4">
+          <div
+            class="h-12 w-12 rounded-lg bg-accent-blue/10 flex items-center justify-center text-accent-blue text-2xl mb-4"
+          >
             🌍
           </div>
           <h3 class="text-lg font-bold text-navy">Global Visa Index</h3>
@@ -249,34 +290,43 @@ function handleTrack() {
 
         <!-- Feature 2 -->
         <AppCard class="hover:border-accent-orange/50 transition-colors duration-300">
-          <div class="h-12 w-12 rounded-lg bg-accent-orange/10 flex items-center justify-center text-accent-orange text-2xl mb-4">
+          <div
+            class="h-12 w-12 rounded-lg bg-accent-orange/10 flex items-center justify-center text-accent-orange text-2xl mb-4"
+          >
             📄
           </div>
           <h3 class="text-lg font-bold text-navy">Document Scanning</h3>
           <p class="text-sm text-gray-500 mt-2">
-            Take photos or upload PDFs. Our app performs a client-side layout validity check before submitting.
+            Take photos or upload PDFs. Our app performs a client-side layout validity check before
+            submitting.
           </p>
         </AppCard>
 
         <!-- Feature 3 -->
         <AppCard class="hover:border-accent-blue/50 transition-colors duration-300">
-          <div class="h-12 w-12 rounded-lg bg-accent-blue/10 flex items-center justify-center text-accent-blue text-2xl mb-4">
+          <div
+            class="h-12 w-12 rounded-lg bg-accent-blue/10 flex items-center justify-center text-accent-blue text-2xl mb-4"
+          >
             💳
           </div>
           <h3 class="text-lg font-bold text-navy">Secure Sandbox Checkout</h3>
           <p class="text-sm text-gray-500 mt-2">
-            No real credit card required. Experience structured fee payments securely during local mock staging.
+            No real credit card required. Experience structured fee payments securely during local
+            mock staging.
           </p>
         </AppCard>
 
         <!-- Feature 4 -->
         <AppCard class="hover:border-accent-orange/50 transition-colors duration-300">
-          <div class="h-12 w-12 rounded-lg bg-accent-orange/10 flex items-center justify-center text-accent-orange text-2xl mb-4">
+          <div
+            class="h-12 w-12 rounded-lg bg-accent-orange/10 flex items-center justify-center text-accent-orange text-2xl mb-4"
+          >
             ⏳
           </div>
           <h3 class="text-lg font-bold text-navy">Live Status Tracker</h3>
           <p class="text-sm text-gray-500 mt-2">
-            Follow along through submission, reviews, consulate schedule interviews, and final approval stamps.
+            Follow along through submission, reviews, consulate schedule interviews, and final
+            approval stamps.
           </p>
         </AppCard>
       </div>
@@ -291,34 +341,43 @@ function handleTrack() {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
           <!-- Step 1 -->
           <div class="space-y-4 text-center md:text-left">
-            <div class="h-10 w-10 rounded-full bg-navy text-surface flex items-center justify-center font-bold text-lg mx-auto md:mx-0">
+            <div
+              class="h-10 w-10 rounded-full bg-navy text-surface flex items-center justify-center font-bold text-lg mx-auto md:mx-0"
+            >
               1
             </div>
             <h3 class="text-xl font-bold text-navy">Select Destination</h3>
             <p class="text-sm text-gray-500">
-              Fill in your passport issuer and destination. Vislet dynamically calculates the checklist.
+              Fill in your passport issuer and destination. Vislet dynamically calculates the
+              checklist.
             </p>
           </div>
 
           <!-- Step 2 -->
           <div class="space-y-4 text-center md:text-left">
-            <div class="h-10 w-10 rounded-full bg-navy text-surface flex items-center justify-center font-bold text-lg mx-auto md:mx-0">
+            <div
+              class="h-10 w-10 rounded-full bg-navy text-surface flex items-center justify-center font-bold text-lg mx-auto md:mx-0"
+            >
               2
             </div>
             <h3 class="text-xl font-bold text-navy">Upload Files</h3>
             <p class="text-sm text-gray-500">
-              Snap photos of required documents. Files are simulated and stored right in your browser.
+              Snap photos of required documents. Files are simulated and stored right in your
+              browser.
             </p>
           </div>
 
           <!-- Step 3 -->
           <div class="space-y-4 text-center md:text-left">
-            <div class="h-10 w-10 rounded-full bg-navy text-surface flex items-center justify-center font-bold text-lg mx-auto md:mx-0">
+            <div
+              class="h-10 w-10 rounded-full bg-navy text-surface flex items-center justify-center font-bold text-lg mx-auto md:mx-0"
+            >
               3
             </div>
             <h3 class="text-xl font-bold text-navy">Checkout & Track</h3>
             <p class="text-sm text-gray-500">
-              Complete the application fee payment using sandbox credentials and watch status updates.
+              Complete the application fee payment using sandbox credentials and watch status
+              updates.
             </p>
           </div>
         </div>
@@ -338,22 +397,23 @@ function handleTrack() {
           <AppButton variant="primary" size="lg" @click="handleGetStarted">
             Get Started Now
           </AppButton>
-          <AppButton variant="outline" size="lg" @click="handleTrack">
-            Access Dashboard
-          </AppButton>
+          <AppButton variant="outline" size="lg" @click="handleTrack"> Access Dashboard </AppButton>
         </div>
       </div>
     </section>
 
     <!-- Footer -->
     <footer class="border-t border-muted bg-navy py-12 text-surface/60">
-      <div class="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div
+        class="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-6"
+      >
         <div class="space-y-2 text-center md:text-left">
           <div class="font-display text-xl font-bold text-surface tracking-tight">Vislet</div>
           <p class="text-xs">Seamless visa and e-visa tracking system.</p>
         </div>
         <div class="flex gap-6 text-sm">
           <RouterLink to="/about" class="hover:text-surface transition-colors">About Us</RouterLink>
+          <RouterLink to="/qa" class="hover:text-surface transition-colors">Q&A Help</RouterLink>
           <a href="#features" class="hover:text-surface transition-colors">Features</a>
           <a href="#estimator" class="hover:text-surface transition-colors">Visa Checker</a>
         </div>
