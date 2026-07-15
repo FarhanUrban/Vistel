@@ -140,7 +140,9 @@ export const useDocumentsStore = defineStore('documents', () => {
     })
   }
 
-  const canFinalize = computed(() => allRequiredUploaded() && allRequiredAnswered())
+  const canFinalize = computed(
+    () => allRequiredUploaded() && allRequiredAnswered(),
+  )
 
   async function submitApplication() {
     const auth = useAuthStore()

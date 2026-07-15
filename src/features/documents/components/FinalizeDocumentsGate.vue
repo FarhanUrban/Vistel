@@ -100,7 +100,9 @@ function closeGate() {
 
 <template>
   <AppModal :open="open && step === 'summary'" title="Review your answers" @close="closeGate">
-    <p class="mb-4 text-sm text-navy/60">Confirm your application answers before submitting.</p>
+    <p class="mb-4 text-sm text-navy/60">
+      Confirm your application answers before submitting.
+    </p>
     <div v-if="answerGroups.length === 0" class="mb-4 text-sm text-navy/50">
       No answers recorded.
     </div>

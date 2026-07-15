@@ -10,7 +10,6 @@ const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' as const },
   { name: 'Payment', path: '/payment', icon: 'payment' as const },
   { name: 'Profile', path: '/profile', icon: 'profile' as const },
-  { name: 'Q&A Help', path: '/qa', icon: 'qa' as const },
 ]
 
 function isActive(path: string): boolean {

@@ -14,7 +14,9 @@ const emit = defineEmits<{
   continue: []
 }>()
 
-const requiredTotal = computed(() => documentsStore.visaQuestions.filter((q) => q.required).length)
+const requiredTotal = computed(
+  () => documentsStore.visaQuestions.filter((q) => q.required).length,
+)
 
 const requiredAnswered = computed(
   () =>
@@ -41,8 +43,7 @@ function onContinue() {
       <div>
         <h2 class="text-xl font-semibold text-navy">Application questions</h2>
         <p class="mt-1 text-sm text-navy/60">
-          Answer these questions for your destination. Required fields must be completed to
-          continue.
+          Answer these questions for your destination. Required fields must be completed to continue.
         </p>
       </div>
       <p class="text-sm font-medium text-accent-blue">
@@ -61,10 +62,7 @@ function onContinue() {
 
     <AppCard class="mb-6 space-y-5">
       <div v-for="question in documentsStore.visaQuestions" :key="question.id" class="space-y-1.5">
-        <p
-          v-if="question.category"
-          class="text-xs font-medium uppercase tracking-wide text-accent-blue"
-        >
+        <p v-if="question.category" class="text-xs font-medium uppercase tracking-wide text-accent-blue">
           {{ question.category }}
         </p>
 
@@ -96,7 +94,10 @@ function onContinue() {
             class="w-full rounded-control border border-muted bg-white px-4 py-2.5 text-navy placeholder:text-navy/40 focus:border-accent-blue focus:outline-none focus:ring-2 focus:ring-accent-blue/40"
             :placeholder="question.placeholder ?? ''"
             @input="
-              documentsStore.setAnswer(question.id, ($event.target as HTMLTextAreaElement).value)
+              documentsStore.setAnswer(
+                question.id,
+                ($event.target as HTMLTextAreaElement).value,
+              )
             "
           />
         </div>

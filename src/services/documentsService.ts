@@ -70,7 +70,11 @@ export async function getRequiredDocuments(
   visaType: VisaType,
 ): Promise<RequiredDocument[]> {
   const table = requiredDocsData as Record<string, RequiredDocument[]>
-  return lookupByCountryVisa(table, destinationCountry, visaType) ?? table.default ?? []
+  return (
+    lookupByCountryVisa(table, destinationCountry, visaType) ??
+    table.default ??
+    []
+  )
 }
 
 export async function getVisaQuestions(
@@ -78,7 +82,11 @@ export async function getVisaQuestions(
   visaType: VisaType,
 ): Promise<VisaQuestion[]> {
   const table = visaQuestionsData as Record<string, VisaQuestion[]>
-  return lookupByCountryVisa(table, destinationCountry, visaType) ?? table.default ?? []
+  return (
+    lookupByCountryVisa(table, destinationCountry, visaType) ??
+    table.default ??
+    []
+  )
 }
 
 export async function uploadDocument(

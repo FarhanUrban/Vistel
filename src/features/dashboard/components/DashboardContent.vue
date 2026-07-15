@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, onUnmounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppCard from '@/components/AppCard.vue'
 import AppButton from '@/components/AppButton.vue'
@@ -8,13 +8,11 @@ import AppLoadingSpinner from '@/components/AppLoadingSpinner.vue'
 import AppModal from '@/components/AppModal.vue'
 import CountryFlag from '@/components/CountryFlag.vue'
 import ApplicationStatusBadge from '@/features/dashboard/components/ApplicationStatusBadge.vue'
-import VisaProgressTracker from '@/features/dashboard/components/VisaProgressTracker.vue'
 import { useDashboardStore } from '@/features/dashboard/store'
 import { useOnboardingStore } from '@/features/onboarding/store'
 import { useDocumentsStore } from '@/features/documents/store'
 import { getCountryName } from '@/services/visaIndexService'
 import type { Interview, OnboardingDraft, VisaApplication, VisaType } from '@/types'
-import * as visaService from '@/services/visaService'
 
 const router = useRouter()
 const dashboardStore = useDashboardStore()
@@ -22,75 +20,6 @@ const onboardingStore = useOnboardingStore()
 const documentsStore = useDocumentsStore()
 
 const selectedCompleted = ref<VisaApplication | null>(null)
-
-const activeSimulations = ref<Record<string, number>>({})
-const timers = new Map<string, ReturnType<typeof setInterval>>()
-
-function startSimulation(app: VisaApplication) {
-  if (timers.has(app.id)) return
-
-  // Initialize progress state: step 0 (Application Received) if submitted, otherwise step 1
-  activeSimulations.value[app.id] = app.status === 'submitted' ? 0 : 1
-
-  // If status is submitted, update it to reviewing in database right away
-  if (app.status === 'submitted') {
-    visaService.updateApplication(app.id, { status: 'reviewing' }).then(() => {
-      dashboardStore.loadDashboard()
-    })
-  }
-
-  const intervalId = setInterval(async () => {
-    const current = activeSimulations.value[app.id] ?? 0
-    if (current < 3) {
-      activeSimulations.value[app.id] = current + 1
-    } else {
-      // Simulation complete! Decide approval or rejection
-      clearInterval(intervalId)
-      timers.delete(app.id)
-
-      const approved = Math.random() < 0.9
-      try {
-        if (approved) {
-          await visaService.updateApplication(app.id, {
-            status: 'awaiting_payment',
-            reviewedAt: new Date().toISOString(),
-          })
-        } else {
-          await visaService.updateApplication(app.id, {
-            status: 'rejected',
-            reviewedAt: new Date().toISOString(),
-            rejectionCode: 'DOCUMENT_QUALITY',
-          })
-        }
-      } catch (err) {
-        console.error('Error updating application final status:', err)
-      } finally {
-        delete activeSimulations.value[app.id]
-        // Reload dashboard to move the application to its new group
-        await dashboardStore.loadDashboard()
-      }
-    }
-  }, 3000)
-
-  timers.set(app.id, intervalId)
-}
-
-watch(
-  () => dashboardStore.reviewingApplications,
-  (apps) => {
-    for (const app of apps) {
-      startSimulation(app)
-    }
-  },
-  { deep: true, immediate: true },
-)
-
-onUnmounted(() => {
-  for (const timerId of timers.values()) {
-    clearInterval(timerId)
-  }
-  timers.clear()
-})
 
 const workingOnDrafts = computed(() => {
   return onboardingStore.incompleteDrafts.filter((draft) => {
@@ -226,13 +155,26 @@ function openInterview(interview: Interview) {
 
       <section v-if="dashboardStore.reviewingApplications.length > 0" class="mb-8">
         <h2 class="mb-3 text-lg font-medium text-navy">Waiting on visa</h2>
-        <div class="space-y-4">
-          <VisaProgressTracker
+        <div class="space-y-3">
+          <AppCard
             v-for="app in dashboardStore.reviewingApplications"
             :key="app.id"
-            :application="app"
-            :current-step="activeSimulations[app.id] ?? 0"
-          />
+            padding="sm"
+            class="cursor-pointer transition-colors hover:border-accent-blue/50"
+            @click="openDocumentsForCountry(app.destinationCountry, app.visaType)"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 items-start gap-3">
+                <CountryFlag :iso2="app.destinationCountry" />
+                <div>
+                  <p class="font-medium text-navy">{{ getCountryName(app.destinationCountry) }}</p>
+                  <p class="text-sm capitalize text-navy/60">{{ formatVisaType(app.visaType) }}</p>
+                </div>
+              </div>
+              <ApplicationStatusBadge :status="app.status" />
+            </div>
+            <p class="mt-2 text-xs text-navy/40">Submitted {{ formatDate(app.submittedAt) }}</p>
+          </AppCard>
         </div>
       </section>
 
