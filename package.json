@@ -16,7 +16,8 @@
     "firebase:deploy:firestore-rules": "firebase deploy --only firestore:rules",
     "firebase:deploy:storage-rules": "firebase deploy --only storage:rules",
     "firebase:deploy:indexes": "firebase deploy --only firestore:indexes",
-    "pages:deploy": "npm run build && wrangler pages deploy dist"
+    "pages:deploy": "npm run build && npx wrangler pages deploy dist --project-name=vislet --branch=main --commit-dirty=true",
+    "pages:deploy:mock": "VITE_USE_MOCK_SERVICES=true npm run build && npx wrangler pages deploy dist --project-name=vislet --branch=main --commit-dirty=true"
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",
