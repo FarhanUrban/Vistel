@@ -52,7 +52,7 @@ async function handleDeleteAccount() {
   try {
     await authStore.deleteAccount(isEmailUser.value ? deletePassword.value : undefined)
     showDeleteModal.value = false
-    router.push({ name: 'Welcome' })
+    router.push({ name: 'Welcome', query: { accountDeleted: '1' } })
   } catch {
     // Error surfaced via authStore.error
   }
@@ -87,7 +87,8 @@ async function handleDeleteAccount() {
         Delete account permanently
       </AppButton>
       <p class="text-center text-xs text-gray-400">
-        Reset clears local data and signs you out. Delete also removes your Firebase sign-in.
+        Reset clears local data and signs you out. Delete permanently removes your Firebase sign-in
+        and cloud files.
       </p>
     </AppCard>
 

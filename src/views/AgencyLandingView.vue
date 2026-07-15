@@ -62,7 +62,7 @@ function handleLoginRedirect() {
     <header class="border-b border-white/10 bg-navy/85 backdrop-blur-md sticky top-0 z-50">
       <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <div class="flex items-center gap-3">
-          <AppLogo class="text-white brightness-200" />
+          <AppLogo class="text-surface" />
           <span class="text-xs uppercase font-semibold text-accent-orange bg-accent-orange/10 px-2 py-0.5 rounded border border-accent-orange/20">Partners</span>
         </div>
         <div class="flex items-center gap-4">
@@ -187,23 +187,23 @@ function handleLoginRedirect() {
 
     <!-- Contact Apply Modal -->
     <div v-if="showApplyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <AppCard class="max-w-md w-full bg-navy border border-white/10 p-6 space-y-4">
+      <AppCard tone="dark" class="max-w-md w-full space-y-4">
         <div class="flex justify-between items-center border-b border-white/10 pb-3">
-          <h3 class="text-lg font-bold text-white">Partner Application</h3>
-          <button @click="showApplyModal = false" class="text-white/60 hover:text-white text-xl">&times;</button>
+          <h3 class="text-lg font-bold text-surface">Partner Application</h3>
+          <button type="button" @click="showApplyModal = false" class="text-surface/60 hover:text-surface text-xl leading-none" aria-label="Close">&times;</button>
         </div>
         <form @submit.prevent="submitApplication" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-white/80 mb-1">Company / Agency Name</label>
-            <input v-model="companyName" required type="text" class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-orange rounded-control p-2.5 outline-none text-white transition-colors" placeholder="Acme Travel Ltd" />
+            <label class="block text-sm font-medium text-surface/80 mb-1">Company / Agency Name</label>
+            <input v-model="companyName" required type="text" class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-orange rounded-control p-2.5 outline-none text-surface transition-colors" placeholder="Acme Travel Ltd" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-white/80 mb-1">Contact Email Address</label>
-            <input v-model="contactEmail" required type="email" class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-orange rounded-control p-2.5 outline-none text-white transition-colors" placeholder="agent@acmetravel.com" />
+            <label class="block text-sm font-medium text-surface/80 mb-1">Contact Email Address</label>
+            <input v-model="contactEmail" required type="email" class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-orange rounded-control p-2.5 outline-none text-surface transition-colors" placeholder="agent@acmetravel.com" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-white/80 mb-1">Estimated Monthly Volume</label>
-            <select v-model="estVolume" class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-orange rounded-control p-2.5 outline-none text-white transition-colors">
+            <label class="block text-sm font-medium text-surface/80 mb-1">Estimated Monthly Volume</label>
+            <select v-model="estVolume" class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-orange rounded-control p-2.5 outline-none text-surface transition-colors">
               <option value="1-10">1-10 Visas / month</option>
               <option value="10-50">10-50 Visas / month</option>
               <option value="50-150">50-150 Visas / month</option>

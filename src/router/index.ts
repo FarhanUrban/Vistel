@@ -146,7 +146,10 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
-  if (!authStore.user) {
+  if (!authStore.hydrated) {
+    authStore.hydratePortalSessionSync()
+  }
+  if (!authStore.user && !authStore.hydrated) {
     await authStore.loadCurrentUser()
   }
 

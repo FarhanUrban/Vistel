@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 
+/* cache-bust: force new hashed CSS asset URL after MIME poison */
 @theme {
   --color-navy: #272727;
   --color-black: #000000;
@@ -11,6 +12,8 @@
   --font-body: 'Inter', sans-serif;
   --radius-card: 12px;
   --radius-control: 8px;
+  --text-xxs: 0.625rem;
+  --text-xxs--line-height: 0.875rem;
 }
 
 body {
@@ -19,6 +22,8 @@ body {
 
 #app {
   @apply min-h-screen;
+  /* deploy-cache-bust: 2026-07-15-portal-v5 */
+  --vislet-asset-rev: 8;
 }
 
 .safe-area-bottom {

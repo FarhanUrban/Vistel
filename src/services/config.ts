@@ -51,21 +51,27 @@ export function useMockServices(): boolean {
   return true
 }
 
-export type DocumentStorageBackend = 'local' | 'firebase'
+export type DocumentStorageBackend = 'local' | 'firebase' | 'r2'
 
 /**
- * Document storage backend. Defaults to `local` (browser localStorage).
- * Uploads are simulated locally — no Firebase Storage or Firestore document writes.
- * Set VITE_DOCUMENT_STORAGE=firebase when Firebase Storage is enabled.
+ * Document storage backend.
+ * - `local` (default for mocks): metadata in browser localStorage, no cloud file bytes
+ * - `firebase`: Firebase Storage + Firestore applications
+ * - `r2`: Cloudflare R2 via Pages Functions (`CLIENT_DATA` bucket)
  */
 export function getDocumentStorageBackend(): DocumentStorageBackend {
   if (useMockServices()) return 'local'
 
   const value = import.meta.env.VITE_DOCUMENT_STORAGE?.trim().toLowerCase()
   if (value === 'firebase') return 'firebase'
+  if (value === 'r2') return 'r2'
   return 'local'
 }
 
 export function useFirebaseDocumentStorage(): boolean {
   return !useMockServices() && getDocumentStorageBackend() === 'firebase'
+}
+
+export function useR2DocumentStorage(): boolean {
+  return !useMockServices() && getDocumentStorageBackend() === 'r2'
 }

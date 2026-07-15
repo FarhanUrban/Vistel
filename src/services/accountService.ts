@@ -9,8 +9,13 @@ import {
 import { deleteObject, listAll, ref as storageRef } from 'firebase/storage'
 import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore'
 import { getFirebaseAuth, getFirebaseStorage, getFirestoreDb } from './api'
-import { useMockServices, useFirebaseDocumentStorage } from './config'
+import {
+  useMockServices,
+  useFirebaseDocumentStorage,
+  useR2DocumentStorage,
+} from './config'
 import { clearLocalApplications, clearStoredDocuments } from './localDocumentStorage'
+import { wipeUserR2Data } from './r2Storage'
 
 async function deleteStorageFolder(uid: string): Promise<void> {
   const storage = getFirebaseStorage()
@@ -84,12 +89,27 @@ export async function deleteAccount(password?: string): Promise<void> {
 
   const uid = firebaseUser.uid
   await reauthenticateUser(firebaseUser, password)
-  if (useFirebaseDocumentStorage()) {
+
+  if (useR2DocumentStorage()) {
+    try {
+      await wipeUserR2Data()
+    } catch {
+      // Continue deleting Auth even if R2 wipe partially fails.
+    }
+    clearStoredDocuments(uid)
+    clearLocalApplications(uid)
+  } else if (useFirebaseDocumentStorage()) {
     await deleteStorageFolder(uid)
   } else {
     clearStoredDocuments(uid)
     clearLocalApplications(uid)
   }
-  await deleteFirestoreUserData(uid)
+
+  try {
+    await deleteFirestoreUserData(uid)
+  } catch {
+    // Firestore may be unused in local/r2 metadata modes.
+  }
+
   await deleteUser(firebaseUser)
 }

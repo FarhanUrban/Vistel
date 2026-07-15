@@ -37,6 +37,21 @@ onMounted(async () => {
     }
 
     isLoading.value = false
+
+    // Only auto-review once — remount/refresh must not re-run side effects.
+    if (application.value.status !== 'submitted') {
+      if (application.value.status === 'awaiting_payment' || application.value.status === 'completed') {
+        reviewResult.value = 'approved'
+        reviewComplete.value = true
+      } else if (application.value.status === 'rejected') {
+        reviewResult.value = 'rejected'
+        reviewComplete.value = true
+      } else if (application.value.status === 'reviewing') {
+        isReviewing.value = true
+      }
+      return
+    }
+
     isReviewing.value = true
     await updateApplication(applicationId, { status: 'reviewing' })
     application.value.status = 'reviewing'

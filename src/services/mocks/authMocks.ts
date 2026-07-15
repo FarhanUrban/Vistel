@@ -1,30 +1,23 @@
 import type { User } from '@/types'
 import type { SocialAuthProvider } from '@/features/auth/types'
+import { buildPortalDemoUser, isPortalDemoEmail, resolvePortalRole } from '@/services/portalAuth'
 
 const MOCK_GOOGLE_PROFILE = { email: 'demo@gmail.com', displayName: 'Google User' }
 
 export async function mockSignIn(email: string, _password: string): Promise<User> {
   console.info('[authMocks] mockSignIn', { email })
   await delay(500)
-  const lowEmail = email.toLowerCase()
-  if (lowEmail === 'admin@vislet.com' || lowEmail === 'admin@vistel.com') {
-    return { id: 'mock-admin', email, displayName: 'System Admin', role: 'admin' }
+  if (isPortalDemoEmail(email)) {
+    return buildPortalDemoUser(email)
   }
-  if (lowEmail === 'agency@vislet.com' || lowEmail === 'agency@vistel.com') {
-    return { id: 'mock-agency', email, displayName: 'Global Visa Agency', role: 'agency' }
-  }
-  return { id: 'mock-user-1', email, displayName: 'Demo User', role: 'user' }
+  return { id: 'mock-user-1', email, displayName: 'Demo User', role: resolvePortalRole(email) }
 }
 
 export async function mockSignUp(email: string, _password: string): Promise<User> {
   console.info('[authMocks] mockSignUp', { email })
   await delay(500)
-  const lowEmail = email.toLowerCase()
-  if (lowEmail === 'admin@vislet.com' || lowEmail === 'admin@vistel.com') {
-    return { id: 'mock-admin', email, displayName: 'System Admin', role: 'admin' }
-  }
-  if (lowEmail === 'agency@vislet.com' || lowEmail === 'agency@vistel.com') {
-    return { id: 'mock-agency', email, displayName: 'Global Visa Agency', role: 'agency' }
+  if (isPortalDemoEmail(email)) {
+    return buildPortalDemoUser(email)
   }
   return { id: 'mock-user-1', email, displayName: 'New User', role: 'user' }
 }

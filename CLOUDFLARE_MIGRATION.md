@@ -69,9 +69,50 @@ Once your site is deployed (using either Git or CLI), you can connect your custo
 
 ---
 
+## R2 document storage (`client-data`)
+
+Document file uploads can be stored in Cloudflare R2 instead of Firebase Storage.
+
+### Binding
+
+[`wrangler.jsonc`](wrangler.jsonc) binds the bucket:
+
+```jsonc
+"r2_buckets": [
+  { "binding": "CLIENT_DATA", "bucket_name": "client-data" }
+]
+```
+
+Set production env:
+
+```
+VITE_DOCUMENT_STORAGE=r2
+```
+
+### API (Pages Functions)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/files/upload` | Upload a document (Firebase ID token required) |
+| GET | `/api/files?key=...` | Download an object owned by the caller |
+| POST/DELETE | `/api/account/r2-wipe` | Delete all `users/{uid}/` objects on account delete |
+
+Object keys: `users/{firebaseUid}/documents/{country}_{visa}_{typeId}_{ts}_{filename}`
+
+### Deploy
+
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name=vislet --branch=main
+```
+
+Do not put R2 Access Key secrets in the Vite client — the Function uses the native R2 binding.
+
+---
+
 ## Firebase Services Clean Up (Optional)
 
-Since we are only migrating the **Hosting** service, your Firebase database (Firestore/Dataconnect) and Storage will continue to work perfectly. 
+Firebase Auth remains in use. Document **files** can live in R2 while Auth stays on Firebase.
 
 To disable the old Firebase Hosting to avoid split traffic:
 1. Run `firebase hosting:disable` in your command line, or

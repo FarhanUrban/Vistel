@@ -14,13 +14,20 @@ async function bootstrap() {
   app.use(pinia)
   app.use(router)
 
+  const authStore = useAuthStore(pinia)
+  // Portal sessions restore instantly; never block mount on Firebase.
+  authStore.hydratePortalSessionSync()
+
+  await router.isReady()
+  app.mount('#app')
+
+  void authStore.finishAuthBootstrap()
   if (!useMockServices()) {
-    await initFirebaseAuth()
-    await useAuthStore(pinia).loadCurrentUser()
+    void initFirebaseAuth().catch((error) => {
+      console.error('[bootstrap] Firebase auth init failed.', error)
+    })
     void initFirebaseAnalytics()
   }
-
-  app.mount('#app')
 }
 
 void bootstrap()

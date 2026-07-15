@@ -10,6 +10,14 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const hydrated = ref(false)
+
+  /** Instant portal session restore — never touches Firebase. */
+  function hydratePortalSessionSync() {
+    const portal = authService.peekPortalUser()
+    if (portal) user.value = portal
+    hydrated.value = true
+  }
 
   async function login(email: string, password: string) {
     isLoading.value = true
@@ -97,13 +105,27 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function loadCurrentUser() {
+    if (hydrated.value) return
     isLoading.value = true
     try {
       user.value = await authService.getCurrentUser()
     } catch (e) {
       error.value = formatAuthError(e)
     } finally {
+      hydrated.value = true
       isLoading.value = false
+    }
+  }
+
+  /** Background Firebase session restore after the UI is already mounted. */
+  async function finishAuthBootstrap() {
+    try {
+      const next = await authService.getCurrentUser()
+      if (next) user.value = next
+    } catch (e) {
+      error.value = formatAuthError(e)
+    } finally {
+      hydrated.value = true
     }
   }
 
@@ -111,6 +133,8 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isLoading,
     error,
+    hydrated,
+    hydratePortalSessionSync,
     login,
     register,
     loginWithProvider,
@@ -119,5 +143,6 @@ export const useAuthStore = defineStore('auth', () => {
     deleteAccount,
     resetAppData,
     loadCurrentUser,
+    finishAuthBootstrap,
   }
 })

@@ -2,6 +2,8 @@ import type { UploadedDocument, VisaApplication, VisaType } from '@/types'
 
 const DOCS_KEY = 'vislet_uploaded_docs'
 const APPS_KEY = 'vislet_applications'
+const PORTAL_USER_KEY = 'vislet_portal_user'
+const MAX_REJECTED_APPS_PER_USER = 10
 
 interface StoredDocRecord {
   id: string
@@ -11,6 +13,7 @@ interface StoredDocRecord {
   documentTypeId?: string
   destinationCountry?: string
   visaType?: VisaType
+  url?: string
 }
 
 export interface DocumentScope {
@@ -43,7 +46,32 @@ function loadApps(): VisaApplication[] {
 }
 
 function saveApps(apps: VisaApplication[]): void {
-  localStorage.setItem(APPS_KEY, JSON.stringify(apps))
+  localStorage.setItem(APPS_KEY, JSON.stringify(pruneRejectedApps(apps)))
+}
+
+/** Keep storage bounded: at most N rejected apps per userId. */
+function pruneRejectedApps(apps: VisaApplication[]): VisaApplication[] {
+  const rejectedByUser = new Map<string, VisaApplication[]>()
+  const keep: VisaApplication[] = []
+
+  for (const app of apps) {
+    if (app.status !== 'rejected') {
+      keep.push(app)
+      continue
+    }
+    const list = rejectedByUser.get(app.userId) ?? []
+    list.push(app)
+    rejectedByUser.set(app.userId, list)
+  }
+
+  for (const list of rejectedByUser.values()) {
+    list
+      .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
+      .slice(0, MAX_REJECTED_APPS_PER_USER)
+      .forEach((app) => keep.push(app))
+  }
+
+  return keep
 }
 
 function delay(ms: number): Promise<void> {
@@ -55,6 +83,95 @@ function sameScope(doc: StoredDocRecord, scope: DocumentScope): boolean {
     doc.destinationCountry?.toUpperCase() === scope.destinationCountry.toUpperCase() &&
     doc.visaType === scope.visaType
   )
+}
+
+function isActiveApp(app: VisaApplication): boolean {
+  return app.status !== 'rejected'
+}
+
+function upsertUserApplication(application: VisaApplication): string {
+  const apps = loadApps()
+  const existingIndex = apps.findIndex(
+    (app) =>
+      app.userId === application.userId &&
+      !app.agencyId &&
+      app.destinationCountry.toUpperCase() === application.destinationCountry.toUpperCase() &&
+      app.visaType === application.visaType &&
+      isActiveApp(app),
+  )
+
+  if (existingIndex >= 0) {
+    const keptId = apps[existingIndex].id
+    apps[existingIndex] = { ...application, id: keptId }
+    saveApps(apps)
+    return keptId
+  }
+
+  saveApps([...apps, application])
+  return application.id
+}
+
+function upsertAgencyApplication(application: VisaApplication): string {
+  const apps = loadApps()
+  const clientKey = (application.clientEmail || application.clientName || '').toLowerCase()
+  const existingIndex = apps.findIndex(
+    (app) =>
+      app.agencyId === application.agencyId &&
+      (app.clientEmail || app.clientName || '').toLowerCase() === clientKey &&
+      app.destinationCountry.toUpperCase() === application.destinationCountry.toUpperCase() &&
+      app.visaType === application.visaType &&
+      isActiveApp(app),
+  )
+
+  if (existingIndex >= 0) {
+    const keptId = apps[existingIndex].id
+    apps[existingIndex] = { ...application, id: keptId }
+    saveApps(apps)
+    return keptId
+  }
+
+  saveApps([...apps, application])
+  return application.id
+}
+
+/** Persist document metadata (local, R2, or firebase) without growing duplicates. */
+export function upsertStoredDocumentMeta(
+  userId: string,
+  documentTypeId: string,
+  scope: DocumentScope,
+  meta: { id: string; name: string; uploadedAt: string; url?: string },
+): UploadedDocument {
+  const record: StoredDocRecord = {
+    id: meta.id,
+    userId,
+    name: meta.name,
+    uploadedAt: meta.uploadedAt,
+    documentTypeId,
+    destinationCountry: scope.destinationCountry.toUpperCase(),
+    visaType: scope.visaType,
+    url: meta.url,
+  }
+
+  const docs = loadDocs().filter(
+    (doc) =>
+      !(
+        doc.userId === userId &&
+        doc.documentTypeId === documentTypeId &&
+        (sameScope(doc, scope) || !doc.destinationCountry || !doc.visaType)
+      ),
+  )
+  docs.push(record)
+  saveDocs(docs)
+
+  return {
+    id: record.id,
+    name: record.name,
+    url: record.url ?? `local://${record.id}`,
+    uploadedAt: record.uploadedAt,
+    documentTypeId,
+    destinationCountry: record.destinationCountry,
+    visaType: record.visaType,
+  }
 }
 
 /** Simulates an upload — stores metadata in localStorage only (no cloud). */
@@ -72,31 +189,18 @@ export async function pretendUploadDocument(
 
   const uploadedAt = new Date().toISOString()
   const id = `local_${userId}_${scope.destinationCountry}_${scope.visaType}_${documentTypeId}_${Date.now()}`
-  const record: StoredDocRecord = {
-    id,
-    userId,
-    name: file.name,
-    uploadedAt,
-    documentTypeId,
-    destinationCountry: scope.destinationCountry.toUpperCase(),
-    visaType: scope.visaType,
-  }
+  const objectUrl = URL.createObjectURL(file)
 
-  const docs = loadDocs().filter(
-    (doc) =>
-      !(doc.userId === userId && doc.documentTypeId === documentTypeId && sameScope(doc, scope)),
-  )
-  docs.push(record)
-  saveDocs(docs)
-
-  return {
-    id,
-    name: file.name,
-    url: URL.createObjectURL(file),
-    uploadedAt,
-    documentTypeId,
-    destinationCountry: record.destinationCountry,
-    visaType: record.visaType,
+  try {
+    return upsertStoredDocumentMeta(userId, documentTypeId, scope, {
+      id,
+      name: file.name,
+      uploadedAt,
+      url: objectUrl,
+    })
+  } finally {
+    // Revoke after a tick so callers can use the URL briefly if needed.
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
   }
 }
 
@@ -105,7 +209,6 @@ export function getStoredDocuments(userId: string, scope?: DocumentScope): Uploa
     .filter((doc) => {
       if (doc.userId !== userId) return false
       if (!scope) return true
-      // Legacy unscoped docs only match when no destination was stored
       if (!doc.destinationCountry || !doc.visaType) return false
       return sameScope(doc, scope)
     })
@@ -116,7 +219,7 @@ export function getStoredDocuments(userId: string, scope?: DocumentScope): Uploa
       documentTypeId: doc.documentTypeId,
       destinationCountry: doc.destinationCountry,
       visaType: doc.visaType,
-      url: `local://${doc.id}`,
+      url: doc.url ?? `local://${doc.id}`,
     }))
 }
 
@@ -125,7 +228,15 @@ export function clearStoredDocuments(userId: string, scope?: DocumentScope): voi
     saveDocs(loadDocs().filter((doc) => doc.userId !== userId))
     return
   }
-  saveDocs(loadDocs().filter((doc) => !(doc.userId === userId && sameScope(doc, scope))))
+  saveDocs(
+    loadDocs().filter(
+      (doc) =>
+        !(
+          doc.userId === userId &&
+          (sameScope(doc, scope) || !doc.destinationCountry || !doc.visaType)
+        ),
+    ),
+  )
 }
 
 export function saveLocalApplication(
@@ -135,9 +246,8 @@ export function saveLocalApplication(
   documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[] = [],
   answers: Record<string, string> = {},
 ): string {
-  const id = `app-${Date.now()}`
   const application: VisaApplication = {
-    id,
+    id: `app-${Date.now()}`,
     userId,
     status: 'submitted',
     destinationCountry,
@@ -151,8 +261,7 @@ export function saveLocalApplication(
     })),
     answers,
   }
-  saveApps([...loadApps(), application])
-  return id
+  return upsertUserApplication(application)
 }
 
 export function updateLocalApplication(
@@ -190,10 +299,9 @@ export function saveLocalAgencyApplication(
   documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[] = [],
   answers: Record<string, string> = {},
 ): string {
-  const id = `app-${Date.now()}`
   const application: VisaApplication = {
-    id,
-    userId: agencyId, // store as agency user
+    id: `app-${Date.now()}`,
+    userId: agencyId,
     agencyId,
     clientName,
     clientEmail,
@@ -209,8 +317,7 @@ export function saveLocalAgencyApplication(
     })),
     answers,
   }
-  saveApps([...loadApps(), application])
-  return id
+  return upsertAgencyApplication(application)
 }
 
 export function clearLocalApplications(userId: string): void {
@@ -224,6 +331,7 @@ export function wipeAllVisletLocalData(): void {
   localStorage.removeItem('vislet_onboarding')
   localStorage.removeItem('vislet_onboarding_drafts')
   localStorage.removeItem('vislet_mock_user')
+  localStorage.removeItem(PORTAL_USER_KEY)
 }
 
 /** Visa validity length from payment date. */

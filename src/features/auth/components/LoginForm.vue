@@ -46,7 +46,7 @@ function handleSocialSuccess() {
         >
           ← Back
         </button>
-        <AppLogo />
+        <AppLogo class="text-navy" />
         <h1 class="mt-4 text-2xl font-semibold text-navy">Welcome back</h1>
         <p class="mt-1 text-navy/60">Log in to continue your visa application</p>
       </div>
@@ -58,6 +58,14 @@ function handleSocialSuccess() {
         <AppInput v-model="password" label="Password" type="password" placeholder="••••••••" />
         <AppButton type="submit" full-width :loading="authStore.isLoading">Log In</AppButton>
       </form>
+
+      <p class="mt-3 text-center text-xs text-navy/45">
+        Demo portals:
+        <span class="font-medium text-navy/70">admin@vislet.com</span>
+        /
+        <span class="font-medium text-navy/70">agency@vislet.com</span>
+        (any password)
+      </p>
 
       <SocialSignInButtons @success="handleSocialSuccess" />
 

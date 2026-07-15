@@ -31,7 +31,7 @@ withDefaults(defineProps<Props>(), {
       variant === 'primary' ? 'bg-navy text-surface hover:bg-accent-orange hover:text-navy' : '',
       variant === 'secondary' ? 'bg-accent-orange text-navy hover:brightness-95' : '',
       variant === 'outline'
-        ? 'border-2 border-accent-blue bg-surface text-accent-blue hover:bg-accent-blue/15'
+        ? 'border-2 border-accent-blue bg-transparent text-accent-blue hover:bg-accent-blue/15'
         : '',
     ]"
   >
