@@ -33,12 +33,12 @@ async function handleSubmit() {
   if (!validatePasswords()) return
   await authStore.register(email.value, password.value)
   if (authStore.user) {
-    router.push(getPostAuthRoute())
+    router.push(getPostAuthRoute(null, authStore.user.role))
   }
 }
 
 function handleSocialSuccess() {
-  router.push(getPostAuthRoute())
+  router.push(getPostAuthRoute(null, authStore.user?.role))
 }
 </script>
 

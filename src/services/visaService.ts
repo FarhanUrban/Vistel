@@ -6,6 +6,7 @@ import {
   getLocalApplicationById,
   getLocalApplications,
   updateLocalApplication,
+  getEveryLocalApplication,
 } from './localDocumentStorage'
 import {
   mockGetApplications,
@@ -108,4 +109,35 @@ export async function pollApplicationStatus(
   const snapshot = await getDoc(doc(db, 'applications', applicationId))
   if (!snapshot.exists()) return null
   return mapApplicationDoc(snapshot.id, snapshot.data())
+}
+
+export async function getAllApplications(): Promise<VisaApplication[]> {
+  if (useMockServices()) {
+    const local = getEveryLocalApplication()
+    const mocks = await mockGetApplications('mock-user-1')
+    const byId = new Map<string, VisaApplication>()
+    for (const app of mocks) byId.set(app.id, app)
+    for (const app of local) byId.set(app.id, app)
+    return [...byId.values()]
+  }
+  if (!useFirebaseDocumentStorage()) {
+    return getEveryLocalApplication()
+  }
+  const db = getFirestoreDb()
+  const snapshot = await getDocs(collection(db, 'applications'))
+  return snapshot.docs.map((d) => mapApplicationDoc(d.id, d.data()))
+}
+
+export async function getAgencyApplications(agencyId: string): Promise<VisaApplication[]> {
+  if (useMockServices()) {
+    return getEveryLocalApplication().filter((app) => app.agencyId === agencyId)
+  }
+  if (!useFirebaseDocumentStorage()) {
+    return getEveryLocalApplication().filter((app) => app.agencyId === agencyId)
+  }
+  const db = getFirestoreDb()
+  const snapshot = await getDocs(
+    query(collection(db, 'applications'), where('agencyId', '==', agencyId)),
+  )
+  return snapshot.docs.map((d) => mapApplicationDoc(d.id, d.data()))
 }

@@ -1,6 +1,6 @@
 # Cloudflare Pages Migration Guide
 
-This guide explains how to set up and host the Vistel application on Cloudflare Pages.
+This guide explains how to set up and host the Vislet application on Cloudflare Pages.
 
 We have already configured:
 1. **Single Page Application (SPA) routing:** via the `public/_redirects` file, ensuring all URLs correctly fallback to `index.html`.
@@ -18,9 +18,9 @@ Connecting your GitHub repository to Cloudflare Pages is the best method. Cloudf
 2. In the left sidebar, click **Workers & Pages**.
 3. Click the **Create application** button, then select the **Pages** tab.
 4. Click **Connect to Git**.
-5. Connect your GitHub or GitLab account and select your repository (`Vistel`).
+5. Connect your GitHub or GitLab account and select your repository (`vislet`).
 6. Set up the Build settings:
-   - **Project name:** `vistel` (or your preferred name)
+   - **Project name:** `vislet` (or your preferred name)
    - **Production branch:** `main` (or your main branch)
    - **Framework preset:** `Vite`
    - **Build command:** `npm run build`
@@ -49,7 +49,7 @@ If you prefer to deploy manually from your terminal (or from your own CI/CD runn
    ```
 3. During the first run, Wrangler will ask you:
    - *Would you like to create a new project?* Select **Yes**.
-   - *Enter the name of your project:* Enter `vistel` (or your preferred project name).
+   - *Enter the name of your project:* Enter `vislet` (or your preferred project name).
    - *Enter the production branch name:* Enter `main`.
 
 Wrangler will build the project and upload the files directly from your local `dist/` directory.

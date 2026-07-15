@@ -20,7 +20,7 @@ const password = ref('')
 
 function afterLogin() {
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
-  router.push(getPostAuthRoute(redirect))
+  router.push(getPostAuthRoute(redirect, authStore.user?.role))
 }
 
 async function handleSubmit() {

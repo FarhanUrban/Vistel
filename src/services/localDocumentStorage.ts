@@ -177,6 +177,42 @@ export function getLocalApplicationById(applicationId: string): VisaApplication 
   return loadApps().find((app) => app.id === applicationId) ?? null
 }
 
+export function getEveryLocalApplication(): VisaApplication[] {
+  return loadApps()
+}
+
+export function saveLocalAgencyApplication(
+  agencyId: string,
+  clientName: string,
+  clientEmail: string,
+  destinationCountry: string,
+  visaType: VisaType,
+  documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[] = [],
+  answers: Record<string, string> = {},
+): string {
+  const id = `app-${Date.now()}`
+  const application: VisaApplication = {
+    id,
+    userId: agencyId, // store as agency user
+    agencyId,
+    clientName,
+    clientEmail,
+    status: 'submitted',
+    destinationCountry,
+    visaType,
+    submittedAt: new Date().toISOString(),
+    documents: documents.map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      uploadedAt: doc.uploadedAt,
+      documentTypeId: doc.documentTypeId,
+    })),
+    answers,
+  }
+  saveApps([...loadApps(), application])
+  return id
+}
+
 export function clearLocalApplications(userId: string): void {
   saveApps(loadApps().filter((app) => app.userId !== userId))
 }

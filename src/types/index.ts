@@ -2,6 +2,7 @@ export interface User {
   id: string
   email: string
   displayName?: string
+  role?: 'user' | 'admin' | 'agency'
 }
 
 export type VisaType = 'e-visa' | 'tourist' | 'business' | 'student'
@@ -79,6 +80,10 @@ export interface VisaApplication {
   rejectionCode?: string
   documents?: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[]
   answers?: Record<string, string>
+  agencyId?: string
+  clientName?: string
+  clientEmail?: string
+  notes?: string
 }
 
 export interface Interview {

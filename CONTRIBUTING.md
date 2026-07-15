@@ -5,8 +5,8 @@ Welcome! This guide helps beginner and intermediate developers get started quick
 ## Quick start
 
 ```bash
-git clone https://github.com/FarhanUrban/Vistel.git
-cd Vistel
+git clone https://github.com/FarhanUrban/vislet.git
+cd vislet
 npm install
 cp .env.example .env
 npm run dev

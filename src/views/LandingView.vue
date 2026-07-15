@@ -352,8 +352,10 @@ function handleTrack() {
           <div class="font-display text-xl font-bold text-surface tracking-tight">Vislet</div>
           <p class="text-xs">Seamless visa and e-visa tracking system.</p>
         </div>
-        <div class="flex gap-6 text-sm">
+        <div class="flex gap-6 text-sm flex-wrap justify-center md:justify-start">
           <RouterLink to="/about" class="hover:text-surface transition-colors">About Us</RouterLink>
+          <RouterLink to="/agency" class="hover:text-surface transition-colors">Agency Portal</RouterLink>
+          <RouterLink to="/admin" class="hover:text-surface transition-colors">Admin Board</RouterLink>
           <a href="#features" class="hover:text-surface transition-colors">Features</a>
           <a href="#estimator" class="hover:text-surface transition-colors">Visa Checker</a>
         </div>

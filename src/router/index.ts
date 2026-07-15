@@ -123,6 +123,24 @@ const router = createRouter({
       component: () => import('@/views/WaitingForCheckView.vue'),
       meta: { title: 'Waiting for E-Visa Check' },
     },
+    {
+      path: '/agency',
+      name: 'AgencyLanding',
+      component: () => import('@/views/AgencyLandingView.vue'),
+      meta: { title: 'Vislet for Agencies' },
+    },
+    {
+      path: '/agency/dashboard',
+      name: 'AgencyDashboard',
+      component: () => import('@/views/AgencyDashboardView.vue'),
+      meta: { title: 'Agency Dashboard', requiresAuth: true, requiresAgency: true },
+    },
+    {
+      path: '/admin',
+      name: 'AdminDashboard',
+      component: () => import('@/views/AdminDashboardView.vue'),
+      meta: { title: 'System Admin Console', requiresAuth: true, requiresAdmin: true },
+    },
   ],
 })
 
@@ -134,7 +152,25 @@ router.beforeEach(async (to) => {
 
   const authScreenNames = new Set(['Welcome', 'Login', 'Signup'])
   if (authStore.user && authScreenNames.has(String(to.name))) {
+    if (authStore.user.role === 'admin') {
+      return { name: 'AdminDashboard' }
+    }
+    if (authStore.user.role === 'agency') {
+      return { name: 'AgencyDashboard' }
+    }
     return { name: 'Dashboard' }
+  }
+
+  if (to.meta.requiresAdmin) {
+    if (!authStore.user || authStore.user.role !== 'admin') {
+      return { name: 'Login', query: { redirect: to.fullPath } }
+    }
+  }
+
+  if (to.meta.requiresAgency) {
+    if (!authStore.user || authStore.user.role !== 'agency') {
+      return { name: 'Login', query: { redirect: to.fullPath } }
+    }
   }
 
   if (!to.meta.requiresAuth || useMockServices()) {

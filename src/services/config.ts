@@ -36,6 +36,10 @@ const FIREBASE_ENV_KEYS = [
  * Production builds with valid Firebase config always use live Firebase.
  */
 export function useMockServices(): boolean {
+  if (!hasFirebaseConfig()) {
+    return true
+  }
+
   const value = import.meta.env.VITE_USE_MOCK_SERVICES?.trim().toLowerCase()
 
   if (value === 'false') return false

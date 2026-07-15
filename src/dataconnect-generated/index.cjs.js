@@ -10,7 +10,7 @@ const {
 
 const connectorConfig = {
   connector: 'example',
-  service: 'vistel',
+  service: 'vislet',
   location: 'us-east4',
 }
 exports.connectorConfig = connectorConfig

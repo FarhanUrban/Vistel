@@ -6,13 +6,27 @@ const MOCK_GOOGLE_PROFILE = { email: 'demo@gmail.com', displayName: 'Google User
 export async function mockSignIn(email: string, _password: string): Promise<User> {
   console.info('[authMocks] mockSignIn', { email })
   await delay(500)
-  return { id: 'mock-user-1', email, displayName: 'Demo User' }
+  const lowEmail = email.toLowerCase()
+  if (lowEmail === 'admin@vislet.com' || lowEmail === 'admin@vistel.com') {
+    return { id: 'mock-admin', email, displayName: 'System Admin', role: 'admin' }
+  }
+  if (lowEmail === 'agency@vislet.com' || lowEmail === 'agency@vistel.com') {
+    return { id: 'mock-agency', email, displayName: 'Global Visa Agency', role: 'agency' }
+  }
+  return { id: 'mock-user-1', email, displayName: 'Demo User', role: 'user' }
 }
 
 export async function mockSignUp(email: string, _password: string): Promise<User> {
   console.info('[authMocks] mockSignUp', { email })
   await delay(500)
-  return { id: 'mock-user-1', email, displayName: 'New User' }
+  const lowEmail = email.toLowerCase()
+  if (lowEmail === 'admin@vislet.com' || lowEmail === 'admin@vistel.com') {
+    return { id: 'mock-admin', email, displayName: 'System Admin', role: 'admin' }
+  }
+  if (lowEmail === 'agency@vislet.com' || lowEmail === 'agency@vistel.com') {
+    return { id: 'mock-agency', email, displayName: 'Global Visa Agency', role: 'agency' }
+  }
+  return { id: 'mock-user-1', email, displayName: 'New User', role: 'user' }
 }
 
 export async function mockSignInWithProvider(_provider: SocialAuthProvider): Promise<User> {
@@ -22,6 +36,7 @@ export async function mockSignInWithProvider(_provider: SocialAuthProvider): Pro
     id: 'mock-user-google',
     email: MOCK_GOOGLE_PROFILE.email,
     displayName: MOCK_GOOGLE_PROFILE.displayName,
+    role: 'user',
   }
 }
 

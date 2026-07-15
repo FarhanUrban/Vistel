@@ -10,7 +10,7 @@ import {
 
 export const connectorConfig = {
   connector: 'example',
-  service: 'vistel',
+  service: 'vislet',
   location: 'us-east4',
 }
 export const dataConnectSettings = {
