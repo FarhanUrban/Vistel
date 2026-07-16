@@ -1,18 +1,34 @@
-/*
-  Cross-Origin-Opener-Policy: same-origin-allow-popups
-
 /
   Cache-Control: no-cache, no-store, must-revalidate
+  CDN-Cache-Control: no-store
 
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
+  CDN-Cache-Control: no-store
 
+# Hashed build assets.
+# CDN cache stays short so a mid-deploy SPA HTML mistake cannot stick for a year.
 /m8/*
   X-Content-Type-Options: nosniff
-  Cache-Control: public, max-age=60, must-revalidate
-  CDN-Cache-Control: max-age=60
+  Cache-Control: public, max-age=300, must-revalidate
+  CDN-Cache-Control: max-age=60, must-revalidate
+
+/m9/*
+  X-Content-Type-Options: nosniff
+  Cache-Control: public, max-age=300, must-revalidate
+  CDN-Cache-Control: max-age=60, must-revalidate
+
+/m10/*
+  X-Content-Type-Options: nosniff
+  Cache-Control: public, max-age=300, must-revalidate
+  CDN-Cache-Control: max-age=60, must-revalidate
+
+/m11/*
+  X-Content-Type-Options: nosniff
+  Cache-Control: public, max-age=300, must-revalidate
+  CDN-Cache-Control: max-age=60, must-revalidate
 
 /static/*
   X-Content-Type-Options: nosniff
-  Cache-Control: public, max-age=60, must-revalidate
-  CDN-Cache-Control: max-age=60
+  Cache-Control: public, max-age=300, must-revalidate
+  CDN-Cache-Control: max-age=60, must-revalidate

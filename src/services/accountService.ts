@@ -15,7 +15,31 @@ import {
   useR2DocumentStorage,
 } from './config'
 import { clearLocalApplications, clearStoredDocuments } from './localDocumentStorage'
+import { clearUserNotifications } from './notificationService'
+import { clearPlatformDataForUser } from './platformStorage'
 import { wipeUserR2Data } from './r2Storage'
+
+const FIRESTORE_WIPE_TIMEOUT_MS = 8_000
+const R2_WIPE_TIMEOUT_MS = 20_000
+const REAUTH_TIMEOUT_MS = 90_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`))
+    }, ms)
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        window.clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
 
 async function deleteStorageFolder(uid: string): Promise<void> {
   const storage = getFirebaseStorage()
@@ -69,11 +93,32 @@ async function reauthenticateUser(firebaseUser: FirebaseUser, password?: string)
   }
 
   if (providerId === 'google.com') {
-    await reauthenticateWithPopup(firebaseUser, new GoogleAuthProvider())
+    try {
+      await withTimeout(
+        reauthenticateWithPopup(firebaseUser, new GoogleAuthProvider()),
+        REAUTH_TIMEOUT_MS,
+        'Google re-authentication',
+      )
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes('timed out') || message.includes('popup') || message.includes('COOP')) {
+        throw new Error(
+          'Google confirmation did not finish. Allow popups for vislet.org, disable ad blockers for this site, then try again.',
+        )
+      }
+      throw error
+    }
     return
   }
 
   throw new Error('Unable to verify your identity. Please sign in again and retry.')
+}
+
+function clearLocalUserData(uid: string): void {
+  clearStoredDocuments(uid)
+  clearLocalApplications(uid)
+  clearUserNotifications(uid)
+  clearPlatformDataForUser(uid)
 }
 
 export async function deleteAccount(password?: string): Promise<void> {
@@ -92,24 +137,38 @@ export async function deleteAccount(password?: string): Promise<void> {
 
   if (useR2DocumentStorage()) {
     try {
-      await wipeUserR2Data()
+      await withTimeout(wipeUserR2Data(), R2_WIPE_TIMEOUT_MS, 'Cloud file wipe')
     } catch {
-      // Continue deleting Auth even if R2 wipe partially fails.
+      // Continue — Auth delete is the critical step.
     }
-    clearStoredDocuments(uid)
-    clearLocalApplications(uid)
+    clearLocalUserData(uid)
   } else if (useFirebaseDocumentStorage()) {
-    await deleteStorageFolder(uid)
+    try {
+      await withTimeout(deleteStorageFolder(uid), FIRESTORE_WIPE_TIMEOUT_MS, 'Storage wipe')
+    } catch {
+      // Continue
+    }
   } else {
-    clearStoredDocuments(uid)
-    clearLocalApplications(uid)
+    clearLocalUserData(uid)
   }
 
-  try {
-    await deleteFirestoreUserData(uid)
-  } catch {
-    // Firestore may be unused in local/r2 metadata modes.
+  // Application metadata is local/R2 in production. Firestore wipe is best-effort and
+  // must not hang when ad blockers block Listen channels (ERR_BLOCKED_BY_CLIENT).
+  if (useFirebaseDocumentStorage()) {
+    try {
+      await withTimeout(deleteFirestoreUserData(uid), FIRESTORE_WIPE_TIMEOUT_MS, 'Firestore wipe')
+    } catch {
+      // Extension / leftover docs may remain; Auth delete still proceeds.
+    }
+  } else {
+    // Soft attempt with a short timeout in case a profile doc exists.
+    try {
+      await withTimeout(deleteFirestoreUserData(uid), 3_000, 'Firestore wipe')
+    } catch {
+      // Ignore — R2/local mode does not depend on Firestore.
+    }
   }
 
   await deleteUser(firebaseUser)
+  clearLocalUserData(uid)
 }

@@ -2,11 +2,9 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { RejectionReason, VisaApplication } from '@/types'
 import * as visaService from '@/services/visaService'
-import {
-  mockGetRejectionReasons,
-  mockGetRejectionReasonByCode,
-} from '@/services/mocks/rejectionsMocks'
+import { mockGetRejectionReasonByCode } from '@/services/mocks/rejectionsMocks'
 import { useAuthStore } from '@/features/auth/store'
+import { loadRejectionCodes, saveRejectionCodes } from '@/services/platformStorage'
 
 export const useRejectionsStore = defineStore('rejections', () => {
   const possibleReasons = ref<RejectionReason[]>([])
@@ -17,7 +15,25 @@ export const useRejectionsStore = defineStore('rejections', () => {
   const error = ref<string | null>(null)
 
   function loadPossibleReasons() {
-    possibleReasons.value = mockGetRejectionReasons()
+    possibleReasons.value = loadRejectionCodes()
+  }
+
+  function addRejectionCode(reason: RejectionReason) {
+    const codes = loadRejectionCodes()
+    if (codes.some((c) => c.code === reason.code)) {
+      throw new Error('A rejection code with this identifier already exists')
+    }
+    codes.push(reason)
+    saveRejectionCodes(codes)
+    possibleReasons.value = codes
+  }
+
+  function getReasonByCode(code: string): RejectionReason | undefined {
+    return (
+      possibleReasons.value.find((r) => r.code === code) ??
+      loadRejectionCodes().find((r) => r.code === code) ??
+      mockGetRejectionReasonByCode(code)
+    )
   }
 
   async function loadRejectedApplication() {
@@ -31,7 +47,7 @@ export const useRejectionsStore = defineStore('rejections', () => {
       const rejected = apps.find((a) => a.status === 'rejected')
       currentApplication.value = rejected ?? null
       if (rejected?.rejectionCode) {
-        rejectionReason.value = mockGetRejectionReasonByCode(rejected.rejectionCode) ?? null
+        rejectionReason.value = getReasonByCode(rejected.rejectionCode) ?? null
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load rejection details'
@@ -60,6 +76,8 @@ export const useRejectionsStore = defineStore('rejections', () => {
     isPolling,
     error,
     loadPossibleReasons,
+    addRejectionCode,
+    getReasonByCode,
     loadRejectedApplication,
     pollStatus,
   }

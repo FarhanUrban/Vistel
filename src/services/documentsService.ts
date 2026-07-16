@@ -1,4 +1,15 @@
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import type { EncryptedEnvelope } from '@/types'
+import { encryptPayload } from './countryCrypto'
+import { assignOrgForDestination, getCountryKeyEntry } from './agencyOrgService'
+import { assertCanSubmit, recordSubmission } from './rateLimitService'
+import {
+  getLocalApplications,
+  saveLocalApplication,
+  upsertStoredDocumentMeta,
+  type DocumentScope,
+  pretendUploadDocument,
+} from './localDocumentStorage'
+import { saveEncryptedPayload } from './platformStorage'
 import type { RequiredDocument, UploadedDocument, VisaQuestion, VisaType } from '@/types'
 import {
   useMockServices,
@@ -7,15 +18,9 @@ import {
 } from './config'
 import { getFirebaseStorage } from './api'
 import { iso2ToLegacySlug } from './visaIndexService'
-import {
-  type DocumentScope,
-  getStoredDocuments,
-  pretendUploadDocument,
-  saveLocalApplication,
-  upsertStoredDocumentMeta,
-} from './localDocumentStorage'
 import { mockSubmitApplication } from './mocks/documentsMocks'
-import { uploadDocumentToR2 } from './r2Storage'
+import { uploadDocumentToR2, uploadEncryptedBlobToR2 } from './r2Storage'
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import requiredDocsData from './data/requiredDocuments.json'
 import visaQuestionsData from './data/visaQuestions.json'
 
@@ -25,6 +30,13 @@ export interface SubmitApplicationInput {
   visaType: VisaType
   documents: UploadedDocument[]
   answers: Record<string, string>
+}
+
+export interface EncryptedApplicationPayload {
+  answers: Record<string, string>
+  documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[]
+  clientName?: string
+  clientEmail?: string
 }
 
 function sanitizeStorageFileName(name: string): string {
@@ -68,6 +80,7 @@ export async function getUserDocuments(
   userId: string,
   scope?: DocumentScope,
 ): Promise<UploadedDocument[]> {
+  const { getStoredDocuments } = await import('./localDocumentStorage')
   return getStoredDocuments(userId, scope)
 }
 
@@ -111,6 +124,25 @@ export async function uploadDocument(
 
   if (useR2DocumentStorage()) {
     try {
+      const countryEntry = getCountryKeyEntry(scope.destinationCountry)
+      if (countryEntry?.publicKeyJwk?.n) {
+        const { encryptBytes } = await import('./countryCrypto')
+        const envelope = await encryptBytes(countryEntry.publicKeyJwk, await file.arrayBuffer())
+        const uploaded = await uploadEncryptedBlobToR2(envelope, {
+          documentTypeId,
+          destinationCountry: scope.destinationCountry,
+          visaType: scope.visaType,
+          fileName: file.name,
+          applicationId: 'pending',
+        })
+        return upsertStoredDocumentMeta(userId, documentTypeId, scope, {
+          id: uploaded.key,
+          name: file.name,
+          uploadedAt: uploaded.uploadedAt,
+          url: uploaded.url,
+        })
+      }
+
       const uploaded = await uploadDocumentToR2(file, {
         documentTypeId,
         destinationCountry: scope.destinationCountry,
@@ -146,6 +178,21 @@ export async function uploadDocument(
 }
 
 export async function submitApplication(input: SubmitApplicationInput): Promise<string> {
+  const userApps = getLocalApplications(input.userId)
+  assertCanSubmit(input.userId, input.destinationCountry, userApps)
+
+  const countryEntry = getCountryKeyEntry(input.destinationCountry)
+  if (!countryEntry?.publicKeyJwk?.n) {
+    throw new Error('Encryption is not configured for this destination yet.')
+  }
+
+  const assignedOrgId = assignOrgForDestination(input.destinationCountry)
+  if (!assignedOrgId) {
+    throw new Error(
+      'No agency is available for this destination yet. We are onboarding partners — check back soon.',
+    )
+  }
+
   const documentMeta = input.documents.map((doc) => ({
     id: doc.id,
     name: doc.name,
@@ -153,38 +200,65 @@ export async function submitApplication(input: SubmitApplicationInput): Promise<
     documentTypeId: doc.documentTypeId,
   }))
 
-  // Application records stay local unless firebase document storage is fully enabled.
-  if (useMockServices() || !useFirebaseDocumentStorage()) {
-    if (useMockServices()) {
-      await mockSubmitApplication(`app-${Date.now()}`)
-    }
-    return saveLocalApplication(
-      input.userId,
-      input.destinationCountry,
-      input.visaType,
-      documentMeta,
-      input.answers,
-    )
+  const sensitivePayload: EncryptedApplicationPayload = {
+    answers: input.answers,
+    documents: documentMeta,
   }
 
-  const { addDoc, collection } = await import('firebase/firestore')
-  const { getFirestoreDb } = await import('./api')
-  const db = getFirestoreDb()
-  const docRef = await addDoc(collection(db, 'applications'), {
-    userId: input.userId,
-    status: 'submitted',
-    destinationCountry: input.destinationCountry,
-    visaType: input.visaType,
-    submittedAt: new Date().toISOString(),
-    answers: input.answers,
-    documents: input.documents.map((doc) => ({
-      id: doc.id,
-      name: doc.name,
-      uploadedAt: doc.uploadedAt,
-      documentTypeId: doc.documentTypeId,
-      storage: 'firebase',
-    })),
-  })
+  const envelope = await encryptPayload(countryEntry.publicKeyJwk, sensitivePayload)
+  const applicationId =
+    useMockServices() || !useFirebaseDocumentStorage()
+      ? saveLocalApplication(
+          input.userId,
+          input.destinationCountry,
+          input.visaType,
+          [],
+          {},
+          {
+            encrypted: true,
+            encryptedPayloadRef: `local://encrypted/${Date.now()}`,
+            orgId: assignedOrgId,
+          },
+        )
+      : await (async () => {
+          const { addDoc, collection } = await import('firebase/firestore')
+          const { getFirestoreDb } = await import('./api')
+          const db = getFirestoreDb()
+          const docRef = await addDoc(collection(db, 'applications'), {
+            userId: input.userId,
+            status: 'submitted',
+            destinationCountry: input.destinationCountry.toUpperCase(),
+            visaType: input.visaType,
+            submittedAt: new Date().toISOString(),
+            encrypted: true,
+            encryptedPayloadRef: 'firestore',
+            orgId: assignedOrgId,
+          })
+          return docRef.id
+        })()
 
-  return docRef.id
+  saveEncryptedPayload(applicationId, envelope)
+  recordSubmission(input.userId, applicationId)
+
+  if (useMockServices()) {
+    await mockSubmitApplication(applicationId)
+  }
+
+  const { syncOrgStats } = await import('./agencyOrgService')
+  syncOrgStats(assignedOrgId)
+
+  return applicationId
 }
+
+export async function decryptApplicationPayload(
+  applicationId: string,
+  privateKeyJwk: JsonWebKey,
+): Promise<EncryptedApplicationPayload> {
+  const { getEncryptedPayloadAsync } = await import('./platformStorage')
+  const { decryptPayload } = await import('./countryCrypto')
+  const envelope = await getEncryptedPayloadAsync(applicationId)
+  if (!envelope) throw new Error('Encrypted application data not found')
+  return decryptPayload<EncryptedApplicationPayload>(privateKeyJwk, envelope)
+}
+
+export type { EncryptedEnvelope }

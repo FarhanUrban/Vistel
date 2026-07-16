@@ -3,6 +3,91 @@ export interface User {
   email: string
   displayName?: string
   role?: 'user' | 'admin' | 'agency'
+  orgId?: string
+  orgKind?: AgencyOrgKind
+  mustChangePassword?: boolean
+}
+
+export type AgencyOrgKind = 'travel' | 'government'
+
+export interface AgencyOrgStats {
+  submitted: number
+  pending: number
+  approved: number
+  rejected: number
+  awaitingPayment: number
+  completed: number
+}
+
+export interface AgencyOrg {
+  id: string
+  name: string
+  orgKind: AgencyOrgKind
+  countries: string[]
+  memberUids: string[]
+  memberEmails: string[]
+  /** Primary login email for the agency lead. */
+  primaryMemberEmail?: string
+  /** SHA-256 hex of the temporary invite password (never plaintext). */
+  invitePasswordHash?: string
+  /** When true, agency lead must set a new password after login. */
+  mustChangePassword?: boolean
+  /** Max pending applications before overflow to another org (default 25). */
+  maxPendingApplications?: number
+  active: boolean
+  stats: AgencyOrgStats
+  createdAt: string
+}
+
+export interface PaymentRecord {
+  id: string
+  userId: string
+  applicationId: string
+  destinationCountry: string
+  visaType: VisaType
+  amount: number
+  currency: string
+  transactionId: string
+  paidAt: string
+  status: 'success' | 'failed'
+}
+
+export interface CountryKeyRegistryEntry {
+  iso2: string
+  publicKeyJwk: JsonWebKey
+  registeredByOrgId: string
+  registeredAt: string
+  live: boolean
+}
+
+export interface ApplicantNotification {
+  id: string
+  userId: string
+  type: 'decision'
+  applicationId: string
+  status: VisaApplicationStatus
+  rejectionCode?: string
+  rejectionOther?: string
+  rejectionDetails?: string
+  message: string
+  createdAt: string
+  read: boolean
+}
+
+export interface AdminAuditEntry {
+  id: string
+  actorUid: string
+  orgId?: string
+  action: string
+  applicationId?: string
+  timestamp: string
+}
+
+export interface EncryptedEnvelope {
+  version: 1
+  encryptedKey: string
+  iv: string
+  ciphertext: string
 }
 
 export type VisaType = 'e-visa' | 'tourist' | 'business' | 'student'
@@ -78,12 +163,18 @@ export interface VisaApplication {
   paidAt?: string
   expiresAt?: string
   rejectionCode?: string
+  rejectionOther?: string
+  rejectionDetails?: string
   documents?: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[]
   answers?: Record<string, string>
   agencyId?: string
+  orgId?: string
   clientName?: string
   clientEmail?: string
   notes?: string
+  encryptedPayloadRef?: string
+  /** When true, sensitive fields are stored only in encryptedPayloadRef. */
+  encrypted?: boolean
 }
 
 export interface Interview {

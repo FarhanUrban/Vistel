@@ -1,5 +1,16 @@
 import { json, requireFirebaseUid, type Env } from '../../_shared/auth'
 
+function userCanAccessKey(uid: string, key: string): boolean {
+  if (key.startsWith(`users/${uid}/`)) return true
+  if (key.startsWith('applicants/')) {
+    // Applicant ciphertext under country partition; auth uid must match object metadata userId.
+    return true
+  }
+  if (key.startsWith(`agency/`)) return true
+  if (key.startsWith('admin/')) return false
+  return false
+}
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     const { uid } = await requireFirebaseUid(context.request, context.env)
@@ -12,13 +23,18 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     if (!key) {
       return json({ error: 'key is required' }, 400)
     }
-    if (!key.startsWith(`users/${uid}/`)) {
+    if (!userCanAccessKey(uid, key)) {
       return json({ error: 'Forbidden' }, 403)
     }
 
     const object = await context.env.CLIENT_DATA.get(key)
     if (!object) {
       return json({ error: 'Not found' }, 404)
+    }
+
+    const ownerId = object.customMetadata?.userId
+    if (key.startsWith('applicants/') && ownerId && ownerId !== uid) {
+      return json({ error: 'Forbidden' }, 403)
     }
 
     const headers = new Headers()

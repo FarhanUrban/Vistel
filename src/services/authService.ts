@@ -19,9 +19,20 @@ import {
   mockGetCurrentUser,
 } from './mocks/authMocks'
 import { isPortalDemoEmail, resolvePortalRole } from './portalAuth'
+import {
+  attachUserToOrg,
+  clearMustChangePassword,
+  findOrgByMemberEmail,
+  verifyPassword,
+} from './agencyOrgService'
+import {
+  clearPortalSession,
+  persistPortalSession,
+  readPortalSession,
+} from './portalToken'
+import { wipeAllVisletLocalData } from './localDocumentStorage'
 
-const PORTAL_SESSION_KEY = 'vislet_portal_user'
-const FIREBASE_AUTH_WAIT_MS = 1500
+const FIREBASE_AUTH_WAIT_MS = 400
 
 function mapFirebaseUser(fbUser: {
   uid: string
@@ -29,39 +40,23 @@ function mapFirebaseUser(fbUser: {
   displayName: string | null
 }): User {
   const email = fbUser.email ?? ''
-  return {
+  const base: User = {
     id: fbUser.uid,
     email,
     displayName: fbUser.displayName ?? undefined,
     role: resolvePortalRole(email),
   }
+  return attachUserToOrg(base)
 }
 
-function getAuthProvider(_provider: SocialAuthProvider): GoogleAuthProvider {
+function getAuthProvider(provider: SocialAuthProvider): GoogleAuthProvider {
+  void provider
   return new GoogleAuthProvider()
 }
 
-function persistPortalUser(user: User) {
-  localStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify(user))
-}
-
-function clearPortalUser() {
-  localStorage.removeItem(PORTAL_SESSION_KEY)
-}
-
-function readPortalUser(): User | null {
-  const stored = localStorage.getItem(PORTAL_SESSION_KEY)
-  if (!stored) return null
-  try {
-    return JSON.parse(stored) as User
-  } catch {
-    return null
-  }
-}
-
-/** Sync peek for instant UI bootstrap (no Firebase). */
+/** Sync peek for instant UI bootstrap (sessionStorage only, cleared on logout). */
 export function peekPortalUser(): User | null {
-  return readPortalUser()
+  return readPortalSession()
 }
 
 function waitForFirebaseUser(): Promise<User | null> {
@@ -86,43 +81,82 @@ function waitForFirebaseUser(): Promise<User | null> {
   }
 }
 
+async function assertAgencyInvitePassword(email: string, password: string): Promise<void> {
+  if (isPortalDemoEmail(email)) return
+  const org = findOrgByMemberEmail(email)
+  if (!org?.invitePasswordHash) return
+  const ok = await verifyPassword(password, org.invitePasswordHash)
+  if (!ok) {
+    throw new Error('Incorrect password for this agency account')
+  }
+}
+
 export async function signIn(email: string, password: string): Promise<User> {
-  // Admin/agency demo portals authenticate locally — they are not Firebase users.
+  await assertAgencyInvitePassword(email, password)
+
   if (useMockServices() || isPortalDemoEmail(email)) {
-    const user = await mockSignIn(email, password)
-    localStorage.setItem('vislet_mock_user', JSON.stringify(user))
-    if (isPortalDemoEmail(email)) persistPortalUser(user)
+    const user = attachUserToOrg(await mockSignIn(email, password))
+    if (isPortalDemoEmail(email) || user.role === 'agency' || user.role === 'admin') {
+      persistPortalSession(user)
+    }
     return user
   }
+
+  const org = findOrgByMemberEmail(email)
+  if (org?.invitePasswordHash) {
+    const user = attachUserToOrg({
+      id: `agency-${org.id}-${email}`,
+      email: email.trim().toLowerCase(),
+      displayName: org.name,
+      role: 'agency',
+      orgId: org.id,
+      orgKind: org.orgKind,
+      mustChangePassword: org.mustChangePassword,
+    })
+    persistPortalSession(user)
+    return user
+  }
+
   const auth = getFirebaseAuth()
   const result = await signInWithEmailAndPassword(auth, email, password)
-  clearPortalUser()
+  clearPortalSession()
   return mapFirebaseUser(result.user)
+}
+
+export async function changeAgencyPassword(
+  orgId: string,
+  newPassword: string,
+): Promise<User | null> {
+  await clearMustChangePassword(orgId, newPassword)
+  const portal = readPortalSession()
+  if (portal && portal.orgId === orgId) {
+    const updated = { ...portal, mustChangePassword: false }
+    persistPortalSession(updated)
+    return updated
+  }
+  return null
 }
 
 export async function signUp(email: string, password: string): Promise<User> {
   if (useMockServices() || isPortalDemoEmail(email)) {
     const user = await mockSignUp(email, password)
-    localStorage.setItem('vislet_mock_user', JSON.stringify(user))
-    if (isPortalDemoEmail(email)) persistPortalUser(user)
+    if (isPortalDemoEmail(email)) persistPortalSession(user)
     return user
   }
   const auth = getFirebaseAuth()
   const result = await createUserWithEmailAndPassword(auth, email, password)
-  clearPortalUser()
+  clearPortalSession()
   return mapFirebaseUser(result.user)
 }
 
 export async function signInWithProvider(provider: SocialAuthProvider): Promise<User> {
   if (useMockServices()) {
-    const user = await mockSignInWithProvider(provider)
-    localStorage.setItem('vislet_mock_user', JSON.stringify(user))
-    return user
+    return mockSignInWithProvider(provider)
   }
   const auth = getFirebaseAuth()
   const result = await signInWithPopup(auth, getAuthProvider(provider))
-  clearPortalUser()
-  return mapFirebaseUser(result.user)
+  clearPortalSession()
+  return attachUserToOrg(mapFirebaseUser(result.user))
 }
 
 /** @deprecated Use signInWithProvider('google') */
@@ -131,10 +165,10 @@ export async function signInWithGoogle(): Promise<User> {
 }
 
 export async function signOut(): Promise<void> {
-  clearPortalUser()
+  clearPortalSession()
+  wipeAllVisletLocalData()
   if (useMockServices()) {
     await mockSignOut()
-    localStorage.removeItem('vislet_mock_user')
     return
   }
   try {
@@ -146,26 +180,28 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const portalUser = readPortalUser()
-  if (portalUser) return portalUser
+  const portalUser = readPortalSession()
+  if (portalUser) return attachUserToOrg(portalUser)
 
   if (useMockServices()) {
-    return mockGetCurrentUser()
+    const mock = await mockGetCurrentUser()
+    return mock ? attachUserToOrg(mock) : null
   }
 
-  return waitForFirebaseUser()
+  const fbUser = await waitForFirebaseUser()
+  return fbUser ? attachUserToOrg(fbUser) : null
 }
 
 export async function deleteAccount(password?: string): Promise<void> {
-  // Portal demo accounts are local-only — no Firebase Auth user to delete.
-  const portalUser = readPortalUser()
+  const portalUser = readPortalSession()
   if (portalUser || useMockServices()) {
-    clearPortalUser()
+    clearPortalSession()
+    wipeAllVisletLocalData()
     await mockSignOut()
-    localStorage.removeItem('vislet_mock_user')
     return
   }
 
   await accountService.deleteAccount(password)
-  clearPortalUser()
+  clearPortalSession()
+  wipeAllVisletLocalData()
 }

@@ -2,392 +2,620 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/features/auth/store'
-import { getAgencyApplications } from '@/services/visaService'
-import { saveLocalAgencyApplication } from '@/services/localDocumentStorage'
-import { getAllCountries, iso2ToFlag, getCountryName } from '@/services/visaIndexService'
-import type { VisaApplication, VisaType } from '@/types'
+import { useRejectionsStore } from '@/features/admin-rejections/store'
+import {
+  getAgencyOrg,
+  importCountryPrivateKey,
+  isCountryKeyReady,
+  resolveOrgForUser,
+  setupCountryKeyForAgency,
+  syncOrgStats,
+} from '@/services/agencyOrgService'
+import { getUserPrivateKey } from '@/services/platformStorage'
+import { decryptApplicationPayload } from '@/services/documentsService'
+import { getAgencyApplications, reviewApplication } from '@/services/visaService'
+import { getCountryName, iso2ToFlag } from '@/services/visaIndexService'
+import type { EncryptedApplicationPayload } from '@/services/documentsService'
+import type { VisaApplication } from '@/types'
+import { changeAgencyPassword } from '@/services/authService'
 import AppButton from '@/components/AppButton.vue'
 import AppCard from '@/components/AppCard.vue'
 import AppInput from '@/components/AppInput.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const rejectionsStore = useRejectionsStore()
 
 const applications = ref<VisaApplication[]>([])
 const isLoading = ref(true)
+const org = ref(resolveOrgForUser(authStore.user!))
 
-// Client Form Modal
-const showFormModal = ref(false)
-const clientName = ref('')
-const clientEmail = ref('')
-const passportCountry = ref('')
-const destinationCountry = ref('')
-const visaType = ref<VisaType>('e-visa')
-const simulatedFiles = ref<string[]>([])
-const fileError = ref<string | null>(null)
-const submitting = ref(false)
+const searchQuery = ref('')
+const statusFilter = ref('all')
+/** ISO2 filter within org.countries; empty string = all assigned destinations */
+const destinationFilter = ref('')
 
-const countries = getAllCountries()
+const showKeySetup = ref(false)
+const keySetupCountry = ref('')
+const keySetupStep = ref(1)
+const keyImportText = ref('')
+const keyError = ref<string | null>(null)
+const keyLoading = ref(false)
+const keyConfirmed = ref(false)
+
+const showPasswordChange = ref(false)
+const newAgencyPassword = ref('')
+const newAgencyPasswordConfirm = ref('')
+const passwordError = ref<string | null>(null)
+const passwordSaving = ref(false)
+
+const selectedApp = ref<VisaApplication | null>(null)
+const decrypted = ref<EncryptedApplicationPayload | null>(null)
+const decryptError = ref<string | null>(null)
+const reviewLoading = ref(false)
+const showRejectionHelp = ref(false)
+
+const rejectionCode = ref('')
+const rejectionOther = ref('')
+const rejectionDetails = ref('')
 
 async function loadData() {
   if (!authStore.user) return
+  org.value = resolveOrgForUser(authStore.user)
+  if (!org.value) {
+    isLoading.value = false
+    return
+  }
   isLoading.value = true
   try {
-    applications.value = await getAgencyApplications(authStore.user.id)
-  } catch (e) {
-    console.error('Failed to load agency applications', e)
+    applications.value = await getAgencyApplications(org.value.id)
+    syncOrgStats(org.value.id)
+    org.value = getAgencyOrg(org.value.id) ?? org.value
+    rejectionsStore.loadPossibleReasons()
+    if (authStore.user.mustChangePassword || org.value.mustChangePassword) {
+      showPasswordChange.value = true
+    }
   } finally {
     isLoading.value = false
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!authStore.user || authStore.user.role !== 'agency') {
-    router.push({ name: 'Login' })
+    router.push({ name: 'Login', query: { redirect: '/agency/dashboard' } })
     return
   }
-  loadData()
+  const { hydratePlatformFromRemote } = await import('@/services/platformStorage')
+  await hydratePlatformFromRemote()
+  await loadData()
 })
 
-// Search & Filter
-const searchQuery = ref('')
-const statusFilter = ref('all')
+const stats = computed(() => org.value?.stats ?? {
+  submitted: 0,
+  pending: 0,
+  approved: 0,
+  rejected: 0,
+  awaitingPayment: 0,
+  completed: 0,
+})
+
+const countriesNeedingKeys = computed(() => {
+  if (!org.value) return []
+  return org.value.countries.filter((c) => !isCountryKeyReady(c))
+})
+
+const assignedDestinationsLabel = computed(() => {
+  if (!org.value?.countries.length) return ''
+  return org.value.countries.map((iso) => getCountryName(iso)).join(', ')
+})
+
+const pendingByDestination = computed(() => {
+  const counts: Record<string, number> = {}
+  for (const app of applications.value) {
+    if (app.status !== 'submitted' && app.status !== 'reviewing') continue
+    const iso = app.destinationCountry.toUpperCase()
+    counts[iso] = (counts[iso] ?? 0) + 1
+  }
+  return counts
+})
 
 const filteredApps = computed(() => {
   return applications.value.filter((app) => {
+    const dest = app.destinationCountry.toUpperCase()
+    const matchesDestination =
+      !destinationFilter.value || dest === destinationFilter.value.toUpperCase()
     const matchesSearch =
-      (app.clientName?.toLowerCase().includes(searchQuery.value.toLowerCase()) || false) ||
-      (app.clientEmail?.toLowerCase().includes(searchQuery.value.toLowerCase()) || false) ||
-      app.id.includes(searchQuery.value)
-
+      app.id.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      dest.toLowerCase().includes(searchQuery.value.toLowerCase())
     const matchesStatus = statusFilter.value === 'all' || app.status === statusFilter.value
-
-    return matchesSearch && matchesStatus
+    return matchesDestination && matchesSearch && matchesStatus
   })
 })
 
-// Stats
-const stats = computed(() => {
-  const total = applications.value.length
-  const completed = applications.value.filter((a) => a.status === 'completed').length
-  const reviewing = applications.value.filter((a) => a.status === 'reviewing' || a.status === 'submitted').length
-  const rejected = applications.value.filter((a) => a.status === 'rejected').length
-  const pendingPayment = applications.value.filter((a) => a.status === 'awaiting_payment').length
+const pendingQueue = computed(() =>
+  filteredApps.value.filter((a) => a.status === 'submitted' || a.status === 'reviewing'),
+)
 
-  return { total, completed, reviewing, rejected, pendingPayment }
-})
+const filteredPendingCount = computed(() => pendingQueue.value.length)
 
-// File simulation
-function triggerFileMock(type: string) {
-  simulatedFiles.value.push(type)
+function openKeyWizard(countryIso2: string) {
+  keySetupCountry.value = countryIso2
+  keySetupStep.value = 1
+  keyConfirmed.value = false
+  keyError.value = null
+  keyImportText.value = ''
+  showKeySetup.value = true
 }
 
-function handleAddApplication() {
-  if (!clientName.value || !clientEmail.value || !passportCountry.value || !destinationCountry.value) {
-    fileError.value = 'Please fill out all client details'
+async function handleGenerateKey() {
+  if (!authStore.user || !org.value || !keySetupCountry.value) return
+  keyLoading.value = true
+  keyError.value = null
+  try {
+    await setupCountryKeyForAgency(authStore.user.id, org.value.id, keySetupCountry.value)
+    keySetupStep.value = 2
+  } catch (e) {
+    keyError.value = e instanceof Error ? e.message : 'Key setup failed'
+  } finally {
+    keyLoading.value = false
+  }
+}
+
+function handleImportKey() {
+  if (!authStore.user || !keySetupCountry.value) return
+  keyLoading.value = true
+  keyError.value = null
+  try {
+    const jwk = JSON.parse(keyImportText.value) as JsonWebKey
+    importCountryPrivateKey(authStore.user.id, keySetupCountry.value, jwk)
+    keyImportText.value = ''
+    keySetupStep.value = 3
+  } catch {
+    keyError.value = 'Invalid private key JSON'
+  } finally {
+    keyLoading.value = false
+  }
+}
+
+async function finishKeyWizard() {
+  if (!keyConfirmed.value && keySetupStep.value === 2) {
+    keyError.value = 'Confirm you saved the private key file before continuing.'
     return
   }
-  if (simulatedFiles.value.length === 0) {
-    fileError.value = 'Please upload at least one required client document'
+  showKeySetup.value = false
+  await loadData()
+}
+
+async function handleChangePassword() {
+  if (!org.value) return
+  passwordError.value = null
+  if (newAgencyPassword.value.length < 8) {
+    passwordError.value = 'Password must be at least 8 characters'
     return
   }
-
-  submitting.value = true
-  fileError.value = null
-
-  setTimeout(async () => {
-    try {
-      const documentsList = simulatedFiles.value.map((name, index) => ({
-        id: `local_agency_${Date.now()}_${index}`,
-        name: `${name}_upload.pdf`,
-        uploadedAt: new Date().toISOString(),
-        documentTypeId: name.toLowerCase(),
-      }))
-
-      saveLocalAgencyApplication(
-        authStore.user?.id || 'mock-agency',
-        clientName.value,
-        clientEmail.value,
-        destinationCountry.value,
-        visaType.value,
-        documentsList,
-        {
-          passport_nationality: passportCountry.value,
-          visa_purpose: 'Tourism & Leisure',
-        }
-      )
-
-      // Reset
-      clientName.value = ''
-      clientEmail.value = ''
-      passportCountry.value = ''
-      destinationCountry.value = ''
-      visaType.value = 'e-visa'
-      simulatedFiles.value = []
-      showFormModal.value = false
-
-      await loadData()
-    } catch (e) {
-      console.error(e)
-    } finally {
-      submitting.value = false
+  if (newAgencyPassword.value !== newAgencyPasswordConfirm.value) {
+    passwordError.value = 'Passwords do not match'
+    return
+  }
+  passwordSaving.value = true
+  try {
+    const updated = await changeAgencyPassword(org.value.id, newAgencyPassword.value)
+    if (updated) {
+      // Pinia setup store exposes `user` as writable
+      ;(authStore as { user: typeof updated }).user = updated
     }
-  }, 800)
+    showPasswordChange.value = false
+    newAgencyPassword.value = ''
+    newAgencyPasswordConfirm.value = ''
+  } catch (e) {
+    passwordError.value = e instanceof Error ? e.message : 'Failed to update password'
+  } finally {
+    passwordSaving.value = false
+  }
 }
 
-// Export CSV simulated
-function exportToCSV() {
-  let csvContent = 'data:text/csv;charset=utf-8,ID,Client Name,Client Email,Destination,Visa Type,Status,Submitted At\n'
-  applications.value.forEach((app) => {
-    csvContent += `"${app.id}","${app.clientName || ''}","${app.clientEmail || ''}","${getCountryName(app.destinationCountry)}","${app.visaType}","${app.status}","${app.submittedAt}"\n`
-  })
-  const encodedUri = encodeURI(csvContent)
-  const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
-  link.setAttribute('download', `vislet_agency_clients_${Date.now()}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+async function openReview(app: VisaApplication) {
+  selectedApp.value = app
+  decrypted.value = null
+  decryptError.value = null
+  rejectionCode.value = app.rejectionCode ?? ''
+  rejectionOther.value = app.rejectionOther ?? ''
+  rejectionDetails.value = app.rejectionDetails ?? ''
+
+  if (!authStore.user || !app.encrypted) return
+  const privateKey = getUserPrivateKey(authStore.user.id, app.destinationCountry)
+  if (!privateKey) {
+    decryptError.value = 'Set up or import the country private key first.'
+    return
+  }
+  try {
+    decrypted.value = await decryptApplicationPayload(app.id, privateKey)
+  } catch (e) {
+    decryptError.value = e instanceof Error ? e.message : 'Decryption failed'
+  }
+}
+
+async function handleApprove() {
+  if (!selectedApp.value || !authStore.user || !org.value) return
+  reviewLoading.value = true
+  decryptError.value = null
+  try {
+    await reviewApplication({
+      applicationId: selectedApp.value.id,
+      orgId: org.value.id,
+      actorUid: authStore.user.id,
+      actorEmail: authStore.user.email,
+      actorRole: authStore.user.role,
+      decision: 'approve',
+    })
+    selectedApp.value = null
+    await loadData()
+  } catch (e) {
+    decryptError.value = e instanceof Error ? e.message : 'Approve failed'
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
+async function handleReject() {
+  if (!selectedApp.value || !authStore.user || !org.value) return
+  if (!rejectionCode.value && !rejectionOther.value) {
+    decryptError.value = 'Select a rejection code or enter a custom reason.'
+    return
+  }
+  reviewLoading.value = true
+  try {
+    await reviewApplication({
+      applicationId: selectedApp.value.id,
+      orgId: org.value.id,
+      actorUid: authStore.user.id,
+      actorEmail: authStore.user.email,
+      actorRole: authStore.user.role,
+      decision: 'reject',
+      rejectionCode: rejectionCode.value || 'OTHER',
+      rejectionOther: rejectionOther.value || undefined,
+      rejectionDetails: rejectionDetails.value || undefined,
+    })
+    selectedApp.value = null
+    await loadData()
+  } catch (e) {
+    decryptError.value = e instanceof Error ? e.message : 'Reject failed'
+  } finally {
+    reviewLoading.value = false
+  }
 }
 
 async function handleLogout() {
   await authStore.logout()
-  router.push({ name: 'Landing' })
+  router.push({ name: 'AgencyLanding' })
 }
 
 function getStatusClasses(status: string) {
   switch (status) {
-    case 'completed': return 'bg-green-500/10 text-green-700'
-    case 'rejected': return 'bg-red-500/10 text-red-700'
-    case 'reviewing':
+    case 'completed':
+      return 'bg-green-500/10 text-green-700'
+    case 'rejected':
+      return 'bg-red-500/10 text-red-700'
     case 'submitted':
-    case 'payment_processing': return 'bg-amber-500/10 text-amber-700'
-    case 'awaiting_payment': return 'bg-blue-500/10 text-blue-700'
-    default: return 'bg-gray-100 text-gray-700'
+    case 'reviewing':
+      return 'bg-amber-500/10 text-amber-700'
+    case 'awaiting_payment':
+      return 'bg-blue-500/10 text-blue-700'
+    default:
+      return 'bg-gray-100 text-gray-700'
   }
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-surface">
-    <!-- Header -->
     <header class="border-b border-muted bg-white px-6 py-4">
       <div class="mx-auto flex max-w-7xl items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="font-display text-2xl font-black text-navy tracking-tight">Vislet</div>
-          <span class="text-xs font-bold text-accent-orange bg-accent-orange/15 px-2.5 py-1 rounded-full">AGENCY BOARD</span>
+          <div class="font-display text-2xl font-black text-navy">Vislet</div>
+          <span class="text-xs font-bold text-accent-orange bg-accent-orange/15 px-2.5 py-1 rounded-full">
+            AGENCY REVIEW
+          </span>
         </div>
-        <div class="flex items-center gap-4">
-          <div class="text-right hidden sm:block">
-            <div class="text-sm font-semibold text-navy">{{ authStore.user?.displayName }}</div>
-            <div class="text-xs text-navy/55">{{ authStore.user?.email }}</div>
-          </div>
-          <AppButton variant="outline" size="sm" @click="handleLogout">
-            Sign Out
-          </AppButton>
-        </div>
+        <AppButton variant="outline" size="sm" @click="handleLogout">Sign Out</AppButton>
       </div>
     </header>
 
-    <!-- Main Workspace -->
     <main class="mx-auto max-w-7xl px-6 py-8 space-y-8">
-      <!-- Title & Actions -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div v-if="!org" class="text-center py-16">
+        <p class="text-navy font-semibold">No agency organization assigned to your account.</p>
+        <p class="text-sm text-navy/60 mt-2">Contact your administrator to be invited.</p>
+      </div>
+
+      <template v-else>
         <div>
-          <h1 class="text-3xl font-black tracking-tight text-navy font-display">Client Registries</h1>
-          <p class="text-navy/60 text-sm">Submit and track consolidated passenger visa records.</p>
+          <h1 class="text-3xl font-black text-navy">{{ org.name }}</h1>
+          <p class="text-sm text-navy/60 capitalize">{{ org.orgKind }} · Review queue</p>
         </div>
-        <div class="flex gap-3">
-          <AppButton variant="outline" size="md" @click="exportToCSV" :disabled="applications.length === 0">
-            Export Records
-          </AppButton>
-          <AppButton variant="primary" size="md" class="bg-accent-orange hover:bg-accent-orange/90 text-navy font-bold" @click="showFormModal = true">
-            + New Client Visa
-          </AppButton>
-        </div>
-      </div>
 
-      <!-- Statistics Dashboard -->
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <AppCard class="p-5 flex flex-col justify-between">
-          <span class="text-xs font-bold text-navy/40 uppercase tracking-wider">Total Clients</span>
-          <span class="text-3xl font-extrabold text-navy mt-2">{{ stats.total }}</span>
-        </AppCard>
-        <AppCard class="p-5 flex flex-col justify-between border-l-4 border-green-500">
-          <span class="text-xs font-bold text-navy/40 uppercase tracking-wider">Approved</span>
-          <span class="text-3xl font-extrabold text-green-600 mt-2">{{ stats.completed }}</span>
-        </AppCard>
-        <AppCard class="p-5 flex flex-col justify-between border-l-4 border-amber-500">
-          <span class="text-xs font-bold text-navy/40 uppercase tracking-wider">Under Review</span>
-          <span class="text-3xl font-extrabold text-amber-600 mt-2">{{ stats.reviewing }}</span>
-        </AppCard>
-        <AppCard class="p-5 flex flex-col justify-between border-l-4 border-blue-500">
-          <span class="text-xs font-bold text-navy/40 uppercase tracking-wider">Pending Pay</span>
-          <span class="text-3xl font-extrabold text-blue-600 mt-2">{{ stats.pendingPayment }}</span>
-        </AppCard>
-        <AppCard class="p-5 flex flex-col justify-between border-l-4 border-red-500 col-span-2 lg:col-span-1">
-          <span class="text-xs font-bold text-navy/40 uppercase tracking-wider">Rejected / Flags</span>
-          <span class="text-3xl font-extrabold text-red-600 mt-2">{{ stats.rejected }}</span>
-        </AppCard>
-      </div>
-
-      <!-- Filters & Registry list -->
-      <div class="bg-white rounded-card border border-muted/70 overflow-hidden shadow-sm">
-        <div class="p-5 border-b border-muted flex flex-col sm:flex-row gap-4 items-center justify-between bg-surface/50">
-          <!-- Search input -->
-          <div class="relative w-full sm:max-w-xs">
-            <AppInput v-model="searchQuery" placeholder="Search by name, email, ID..." class="w-full" />
+        <AppCard class="p-5 border-l-4 border-accent-blue">
+          <p class="text-xs font-bold uppercase tracking-wider text-navy/40">Assigned destinations</p>
+          <p class="mt-1 text-sm text-navy">
+            You review visas destined for
+            <span class="font-semibold">{{ assignedDestinationsLabel }}</span>
+            <span class="text-navy/55"> (any passport nationality).</span>
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-control border px-3 py-1.5 text-xs font-semibold transition-colors"
+              :class="
+                !destinationFilter
+                  ? 'border-navy bg-navy text-white'
+                  : 'border-muted bg-white text-navy/70 hover:border-navy/30'
+              "
+              @click="destinationFilter = ''"
+            >
+              All assigned
+              <span v-if="stats.pending" class="ml-1 opacity-80">({{ stats.pending }})</span>
+            </button>
+            <button
+              v-for="iso in org.countries"
+              :key="iso"
+              type="button"
+              class="rounded-control border px-3 py-1.5 text-xs font-semibold transition-colors"
+              :class="
+                destinationFilter === iso
+                  ? 'border-navy bg-navy text-white'
+                  : 'border-muted bg-white text-navy/70 hover:border-navy/30'
+              "
+              @click="destinationFilter = iso"
+            >
+              {{ iso2ToFlag(iso) }} {{ getCountryName(iso) }}
+              <span
+                v-if="pendingByDestination[iso]"
+                class="ml-1 opacity-80"
+              >({{ pendingByDestination[iso] }})</span>
+            </button>
           </div>
-          <!-- Filter Select -->
-          <div class="flex items-center gap-2 w-full sm:w-auto">
-            <label class="text-sm font-semibold text-navy/60 shrink-0">Filter Status:</label>
-            <select v-model="statusFilter" class="bg-white border border-muted hover:border-navy/30 rounded-control p-2.5 text-sm font-medium outline-none transition-colors">
-              <option value="all">All Statuses</option>
+        </AppCard>
+
+        <AppCard
+          v-if="countriesNeedingKeys.length > 0"
+          class="p-5 border-l-4 border-amber-500"
+        >
+          <h2 class="font-bold text-navy">Encryption setup required</h2>
+          <p class="text-sm text-navy/60 mt-1 mb-3">
+            Complete the setup wizard for each destination before applicants can apply and before you can decrypt submissions.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <AppButton
+              v-for="iso in countriesNeedingKeys"
+              :key="iso"
+              variant="outline"
+              size="sm"
+              @click="openKeyWizard(iso)"
+            >
+              Set up {{ iso2ToFlag(iso) }} {{ getCountryName(iso) }}
+            </AppButton>
+          </div>
+        </AppCard>
+
+        <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
+          <AppCard class="p-4"><span class="text-xxs uppercase text-navy/40">Total</span><p class="text-2xl font-bold">{{ stats.submitted }}</p></AppCard>
+          <AppCard class="p-4"><span class="text-xxs uppercase text-navy/40">Pending</span><p class="text-2xl font-bold text-amber-600">{{ stats.pending }}</p></AppCard>
+          <AppCard class="p-4"><span class="text-xxs uppercase text-navy/40">Approved</span><p class="text-2xl font-bold text-green-600">{{ stats.approved }}</p></AppCard>
+          <AppCard class="p-4"><span class="text-xxs uppercase text-navy/40">Rejected</span><p class="text-2xl font-bold text-red-600">{{ stats.rejected }}</p></AppCard>
+          <AppCard class="p-4"><span class="text-xxs uppercase text-navy/40">Awaiting pay</span><p class="text-2xl font-bold text-blue-600">{{ stats.awaitingPayment }}</p></AppCard>
+          <AppCard class="p-4"><span class="text-xxs uppercase text-navy/40">Completed</span><p class="text-2xl font-bold">{{ stats.completed }}</p></AppCard>
+        </div>
+
+        <AppCard class="overflow-hidden">
+          <div class="p-4 border-b border-muted flex flex-wrap gap-3 justify-between">
+            <AppInput v-model="searchQuery" placeholder="Search by ID or country..." class="max-w-xs" />
+            <select v-model="statusFilter" class="border border-muted rounded-control p-2 text-sm">
+              <option value="all">All statuses</option>
               <option value="submitted">Submitted</option>
-              <option value="reviewing">Under Review</option>
-              <option value="awaiting_payment">Awaiting Payment</option>
-              <option value="completed">Completed / Approved</option>
+              <option value="reviewing">Reviewing</option>
+              <option value="awaiting_payment">Awaiting payment</option>
               <option value="rejected">Rejected</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
-        </div>
 
-        <div v-if="isLoading" class="p-12 text-center text-navy/50">
-          Loading client applications...
-        </div>
-
-        <div v-else-if="filteredApps.length === 0" class="p-12 text-center text-navy/50">
-          No records found matching filters.
-        </div>
-
-        <div v-else class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+          <div v-if="isLoading" class="p-12 text-center text-navy/50">Loading queue…</div>
+          <div v-else-if="pendingQueue.length === 0" class="p-12 text-center text-navy/50">
+            <template v-if="destinationFilter">
+              No applications pending for
+              {{ getCountryName(destinationFilter) }}.
+            </template>
+            <template v-else>
+              No applications for your assigned destinations yet.
+            </template>
+            <p v-if="filteredPendingCount === 0 && destinationFilter" class="mt-2 text-xs text-navy/40">
+              Try “All assigned” to see other destinations.
+            </p>
+          </div>
+          <table v-else class="w-full text-sm text-left">
             <thead>
-              <tr class="bg-surface border-b border-muted text-xs font-bold text-navy/50 uppercase">
-                <th class="px-6 py-4">Client Details</th>
-                <th class="px-6 py-4">Destination</th>
-                <th class="px-6 py-4">Visa Category</th>
-                <th class="px-6 py-4">Status</th>
-                <th class="px-6 py-4">Date Submitted</th>
-                <th class="px-6 py-4 text-right">Remarks</th>
+              <tr class="border-b border-muted text-xs uppercase text-navy/50">
+                <th class="px-5 py-3">Application</th>
+                <th class="px-5 py-3">Destination</th>
+                <th class="px-5 py-3">Visa</th>
+                <th class="px-5 py-3">Submitted</th>
+                <th class="px-5 py-3">Status</th>
+                <th class="px-5 py-3"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-muted/65 text-sm">
-              <tr v-for="app in filteredApps" :key="app.id" class="hover:bg-surface/40 transition-colors">
-                <td class="px-6 py-4">
-                  <div class="font-bold text-navy">{{ app.clientName }}</div>
-                  <div class="text-xs text-navy/60">{{ app.clientEmail }}</div>
-                  <div class="text-xxs text-navy/40 font-mono mt-0.5">ID: {{ app.id }}</div>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <span class="text-lg">{{ iso2ToFlag(app.destinationCountry) }}</span>
-                    <span>{{ getCountryName(app.destinationCountry) }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 font-medium text-navy/85">
-                  {{ app.visaType.toUpperCase() }}
-                </td>
-                <td class="px-6 py-4">
-                  <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="getStatusClasses(app.status)">
-                    {{ app.status.replace('_', ' ') }}
+            <tbody class="divide-y divide-muted">
+              <tr v-for="app in pendingQueue" :key="app.id">
+                <td class="px-5 py-3 font-mono text-xs">{{ app.id }}</td>
+                <td class="px-5 py-3">{{ iso2ToFlag(app.destinationCountry) }} {{ getCountryName(app.destinationCountry) }}</td>
+                <td class="px-5 py-3 capitalize">{{ app.visaType.replace('-', ' ') }}</td>
+                <td class="px-5 py-3 text-xs">{{ new Date(app.submittedAt).toLocaleDateString() }}</td>
+                <td class="px-5 py-3">
+                  <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="getStatusClasses(app.status)">
+                    {{ app.status }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-navy/60 text-xs">
-                  {{ new Date(app.submittedAt).toLocaleDateString() }}
-                </td>
-                <td class="px-6 py-4 text-right">
-                  <span v-if="app.status === 'rejected'" class="text-red-500 font-semibold text-xs bg-red-50 p-1.5 rounded">
-                    Code: {{ app.rejectionCode }}
-                  </span>
-                  <span v-else-if="app.status === 'completed'" class="text-green-600 text-xs bg-green-50 p-1.5 rounded">
-                    Approved
-                  </span>
-                  <span v-else class="text-navy/40 text-xs">-</span>
+                <td class="px-5 py-3 text-right">
+                  <AppButton variant="primary" size="sm" @click="openReview(app)">Review</AppButton>
                 </td>
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
+        </AppCard>
+      </template>
     </main>
 
-    <!-- Client Submission Drawer / Modal -->
-    <div v-if="showFormModal" class="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <AppCard class="max-w-xl w-full p-6 space-y-4">
-        <div class="flex justify-between items-center border-b border-muted pb-3">
-          <h3 class="text-lg font-bold text-navy">Submit Client Visa Application</h3>
-          <button @click="showFormModal = false" class="text-navy/50 hover:text-navy text-xl">&times;</button>
+    <div
+      v-if="showPasswordChange"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-4"
+    >
+      <AppCard class="max-w-md w-full p-6 space-y-4">
+        <h3 class="font-bold text-navy">Set a new password</h3>
+        <p class="text-sm text-navy/60">
+          Your administrator gave you a temporary password. Choose a new one to continue.
+        </p>
+        <p v-if="passwordError" class="text-sm text-red-600">{{ passwordError }}</p>
+        <AppInput v-model="newAgencyPassword" label="New password" type="password" />
+        <AppInput v-model="newAgencyPasswordConfirm" label="Confirm password" type="password" />
+        <AppButton
+          variant="primary"
+          class="bg-navy text-white"
+          full-width
+          :loading="passwordSaving"
+          @click="handleChangePassword"
+        >
+          Save password
+        </AppButton>
+      </AppCard>
+    </div>
+
+    <div
+      v-if="showKeySetup"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-4"
+    >
+      <AppCard class="max-w-md w-full p-6 space-y-4">
+        <h3 class="font-bold text-navy">
+          Set up {{ keySetupCountry ? getCountryName(keySetupCountry) : '' }}
+        </h3>
+        <p class="text-xs text-navy/50">Step {{ keySetupStep }} of 3</p>
+
+        <template v-if="keySetupStep === 1">
+          <p class="text-sm text-navy/70">
+            Generate a country encryption keypair, or import the private key from your organization lead.
+          </p>
+          <AppButton full-width :loading="keyLoading" @click="handleGenerateKey">
+            Generate new keypair & download backup
+          </AppButton>
+          <p class="text-xs text-navy/50 text-center">— or import from org lead —</p>
+          <textarea
+            v-model="keyImportText"
+            rows="4"
+            class="w-full border border-muted rounded-control p-2 text-xs font-mono"
+            placeholder="Paste private key JSON…"
+          />
+          <AppButton variant="outline" full-width :loading="keyLoading" @click="handleImportKey">
+            Import private key
+          </AppButton>
+        </template>
+
+        <template v-else-if="keySetupStep === 2">
+          <p class="text-sm text-navy/70">
+            A private key file was downloaded. Store it securely — Vislet cannot recover it if lost.
+            An admin can reset the country key if needed.
+          </p>
+          <label class="flex items-start gap-2 text-sm text-navy cursor-pointer">
+            <input v-model="keyConfirmed" type="checkbox" class="mt-1 rounded border-muted" />
+            I saved the private key backup in a secure place
+          </label>
+          <AppButton full-width class="bg-navy text-white" @click="finishKeyWizard">
+            Confirm & finish
+          </AppButton>
+        </template>
+
+        <template v-else>
+          <p class="text-sm text-green-700 font-semibold">Key imported successfully.</p>
+          <AppButton full-width class="bg-navy text-white" @click="finishKeyWizard">Done</AppButton>
+        </template>
+
+        <AppButton v-if="keySetupStep === 1" variant="outline" full-width @click="showKeySetup = false">
+          Cancel
+        </AppButton>
+        <p v-if="keyError" class="text-xs text-red-600">{{ keyError }}</p>
+      </AppCard>
+    </div>
+
+    <div
+      v-if="selectedApp"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-4 overflow-y-auto"
+    >
+      <AppCard class="max-w-2xl w-full p-6 space-y-4 my-8">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="font-bold text-navy">Review application</h3>
+            <p class="text-xs font-mono text-navy/50">{{ selectedApp.id }}</p>
+          </div>
+          <button type="button" class="text-navy/50 text-xl" @click="selectedApp = null">×</button>
         </div>
 
-        <form @submit.prevent="handleAddApplication" class="space-y-4">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <AppInput v-model="clientName" label="Client Full Name" placeholder="John Doe" required />
-            <AppInput v-model="clientEmail" label="Client Email Address" type="email" placeholder="john@example.com" required />
+        <p v-if="decryptError" class="text-sm text-red-600">{{ decryptError }}</p>
+
+        <template v-if="decrypted">
+          <div class="rounded border border-muted p-4 space-y-2 text-sm max-h-64 overflow-y-auto">
+            <p v-for="(val, key) in decrypted.answers" :key="key">
+              <span class="font-semibold text-navy">{{ key }}:</span> {{ val }}
+            </p>
+            <ul v-if="decrypted.documents?.length" class="mt-2 space-y-1">
+              <li v-for="doc in decrypted.documents" :key="doc.id">📄 {{ doc.name }}</li>
+            </ul>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-navy/70 uppercase">Passport Nationality</label>
-              <select v-model="passportCountry" required class="w-full bg-white border border-muted hover:border-navy/20 rounded-control p-2.5 text-sm font-medium outline-none transition-colors">
-                <option value="" disabled selected>Select</option>
-                <option v-for="c in countries" :key="c.iso2" :value="c.iso2">{{ c.flag }} {{ c.name }}</option>
-              </select>
-            </div>
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-navy/70 uppercase">Destination</label>
-              <select v-model="destinationCountry" required class="w-full bg-white border border-muted hover:border-navy/20 rounded-control p-2.5 text-sm font-medium outline-none transition-colors">
-                <option value="" disabled selected>Select</option>
-                <option v-for="c in countries" :key="c.iso2" :value="c.iso2">{{ c.flag }} {{ c.name }}</option>
-              </select>
-            </div>
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-navy/70 uppercase">Visa Category</label>
-              <select v-model="visaType" required class="w-full bg-white border border-muted hover:border-navy/20 rounded-control p-2.5 text-sm font-medium outline-none transition-colors">
-                <option value="e-visa">E-Visa</option>
-                <option value="tourist">Tourist Visa</option>
-                <option value="business">Business Visa</option>
-                <option value="student">Student Visa</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Document Upload Simulations -->
-          <div class="space-y-2">
-            <span class="text-xs font-bold text-navy/70 uppercase">Consulate Required Attachments</span>
-            <div class="grid grid-cols-3 gap-3">
-              <button type="button" @click="triggerFileMock('Passport')" class="p-3 border border-dashed rounded-control text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-colors"
-                :class="simulatedFiles.includes('Passport') ? 'bg-green-50 border-green-500 text-green-600' : 'border-muted hover:border-navy/35 text-navy/60'">
-                <span>📄</span>
-                <span>Passport Scans</span>
-              </button>
-              <button type="button" @click="triggerFileMock('Photo')" class="p-3 border border-dashed rounded-control text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-colors"
-                :class="simulatedFiles.includes('Photo') ? 'bg-green-50 border-green-500 text-green-600' : 'border-muted hover:border-navy/35 text-navy/60'">
-                <span>📷</span>
-                <span>Photo Portrait</span>
-              </button>
-              <button type="button" @click="triggerFileMock('Itinerary')" class="p-3 border border-dashed rounded-control text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition-colors"
-                :class="simulatedFiles.includes('Itinerary') ? 'bg-green-50 border-green-500 text-green-600' : 'border-muted hover:border-navy/35 text-navy/60'">
-                <span>✈️</span>
-                <span>Flight Details</span>
-              </button>
-            </div>
-            <div v-if="simulatedFiles.length > 0" class="text-xxs text-navy/55 flex flex-wrap gap-1.5 mt-1.5">
-              <span v-for="file in simulatedFiles" :key="file" class="bg-muted px-2 py-0.5 rounded font-medium">{{ file }} Attached ✓</span>
-            </div>
-          </div>
-
-          <div v-if="fileError" class="text-xs text-red-500 bg-red-50 p-2 rounded border border-red-200">
-            {{ fileError }}
-          </div>
-
-          <div class="flex justify-end gap-3 pt-3">
-            <AppButton variant="outline" type="button" @click="showFormModal = false">Cancel</AppButton>
-            <AppButton variant="primary" type="submit" class="bg-accent-orange text-navy font-bold hover:bg-accent-orange/90" :loading="submitting">
-              Submit Record
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <AppButton variant="primary" class="bg-green-600 text-white" :loading="reviewLoading" @click="handleApprove">
+              Approve
             </AppButton>
+            <div class="space-y-2 sm:col-span-2 border-t border-muted pt-3">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-xs font-bold text-navy/70 uppercase">Rejection code</label>
+                <button
+                  type="button"
+                  class="text-xs font-medium text-accent-blue hover:underline"
+                  @click="showRejectionHelp = !showRejectionHelp"
+                >
+                  What is this?
+                </button>
+              </div>
+              <div
+                v-if="showRejectionHelp"
+                class="rounded-control border border-accent-blue/30 bg-accent-blue/10 p-3 text-xs text-navy/70 space-y-2"
+              >
+                <p>
+                  Rejection codes are standardized reasons applicants see when an application is
+                  rejected. Pick the closest match so they know what to fix.
+                </p>
+                <ul class="space-y-1">
+                  <li v-for="r in rejectionsStore.possibleReasons" :key="r.code">
+                    <span class="font-semibold">{{ r.title }}:</span> {{ r.description }}
+                  </li>
+                </ul>
+              </div>
+              <select v-model="rejectionCode" class="w-full border border-muted rounded-control p-2 text-sm">
+                <option value="">Select a code</option>
+                <option v-for="r in rejectionsStore.possibleReasons" :key="r.code" :value="r.code">
+                  {{ r.title }}
+                </option>
+                <option value="OTHER">Other (custom)</option>
+              </select>
+              <AppInput v-model="rejectionOther" placeholder="Custom reason (if Other)" />
+              <textarea
+                v-model="rejectionDetails"
+                rows="2"
+                class="w-full border border-muted rounded-control p-2 text-sm"
+                placeholder="Additional details for the applicant"
+              />
+              <AppButton variant="outline" class="text-red-600 border-red-200" :loading="reviewLoading" @click="handleReject">
+                Reject
+              </AppButton>
+            </div>
           </div>
-        </form>
+        </template>
       </AppCard>
     </div>
   </div>

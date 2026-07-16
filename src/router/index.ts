@@ -100,10 +100,28 @@ const router = createRouter({
       meta: { title: 'About Us' },
     },
     {
+      path: '/privacy',
+      name: 'Privacy',
+      component: () => import('@/views/PrivacyPolicyView.vue'),
+      meta: { title: 'Privacy Policy' },
+    },
+    {
+      path: '/terms',
+      name: 'Terms',
+      component: () => import('@/views/TermsOfServiceView.vue'),
+      meta: { title: 'Terms of Service' },
+    },
+    {
       path: '/profile',
       name: 'Profile',
       component: () => import('@/views/ProfileView.vue'),
       meta: { title: 'Profile', requiresAuth: true },
+    },
+    {
+      path: '/dashboard/history',
+      name: 'DashboardHistory',
+      component: () => import('@/views/HistoryView.vue'),
+      meta: { title: 'History', requiresAuth: true },
     },
     {
       path: '/rejections/possible-reasons',

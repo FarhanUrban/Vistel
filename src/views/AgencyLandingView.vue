@@ -5,9 +5,13 @@ import { useAuthStore } from '@/features/auth/store'
 import AppLogo from '@/components/AppLogo.vue'
 import AppButton from '@/components/AppButton.vue'
 import AppCard from '@/components/AppCard.vue'
+import AppErrorMessage from '@/components/AppErrorMessage.vue'
+import SocialSignInButtons from '@/features/auth/components/SocialSignInButtons.vue'
+import { submitPartnerApplication } from '@/services/platformSync'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const authError = ref<string | null>(null)
 
 // Commission calculator
 const clientCount = ref(50)
@@ -34,17 +38,27 @@ const companyName = ref('')
 const contactEmail = ref('')
 const estVolume = ref('10-50')
 const formSubmitted = ref(false)
+const formError = ref<string | null>(null)
 
-function submitApplication() {
+async function submitApplication() {
   if (!companyName.value || !contactEmail.value) return
   formSubmitted.value = true
-  setTimeout(() => {
+  formError.value = null
+  try {
+    await submitPartnerApplication({
+      companyName: companyName.value.trim(),
+      contactEmail: contactEmail.value.trim(),
+      estimatedVolume: estVolume.value,
+    })
     showApplyModal.value = false
-    formSubmitted.value = false
     companyName.value = ''
     contactEmail.value = ''
     alert('Thank you! Our Partnership team will reach out within 24 hours.')
-  }, 1000)
+  } catch (e) {
+    formError.value = e instanceof Error ? e.message : 'Failed to submit application'
+  } finally {
+    formSubmitted.value = false
+  }
 }
 
 function handleLoginRedirect() {
@@ -52,6 +66,15 @@ function handleLoginRedirect() {
     router.push({ name: 'AgencyDashboard' })
   } else {
     router.push({ name: 'Login', query: { redirect: '/agency/dashboard' } })
+  }
+}
+
+function handleGoogleSuccess() {
+  if (authStore.user?.role === 'agency') {
+    router.push({ name: 'AgencyDashboard' })
+  } else {
+    authError.value =
+      'This Google account is not assigned to an agency organization. Contact your administrator.'
   }
 }
 </script>
@@ -94,8 +117,12 @@ function handleLoginRedirect() {
             Apply for Partnership
           </AppButton>
           <AppButton variant="outline" size="lg" class="border-white/20 text-white hover:bg-white/5" @click="handleLoginRedirect">
-            Access Dashboard
+            Agency email login
           </AppButton>
+        </div>
+        <div class="max-w-sm mx-auto pt-4">
+          <AppErrorMessage v-if="authError" :message="authError" class="mb-3 text-left" />
+          <SocialSignInButtons @success="handleGoogleSuccess" />
         </div>
       </div>
     </section>
@@ -193,6 +220,7 @@ function handleLoginRedirect() {
           <button type="button" @click="showApplyModal = false" class="text-surface/60 hover:text-surface text-xl leading-none" aria-label="Close">&times;</button>
         </div>
         <form @submit.prevent="submitApplication" class="space-y-4">
+          <AppErrorMessage v-if="formError" :message="formError" />
           <div>
             <label class="block text-sm font-medium text-surface/80 mb-1">Company / Agency Name</label>
             <input v-model="companyName" required type="text" class="w-full bg-navy border border-white/20 hover:border-white/40 focus:border-accent-orange rounded-control p-2.5 outline-none text-surface transition-colors" placeholder="Acme Travel Ltd" />

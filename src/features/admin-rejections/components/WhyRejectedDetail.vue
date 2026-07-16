@@ -37,6 +37,26 @@ onMounted(() => {
         <p class="text-sm text-red-700 mt-2">{{ rejectionsStore.rejectionReason.description }}</p>
       </AppCard>
 
+      <AppCard
+        v-if="rejectionsStore.currentApplication.rejectionOther"
+        class="mt-4 border-red-200 bg-red-50"
+      >
+        <p class="font-medium text-red-800">Additional reason</p>
+        <p class="text-sm text-red-700 mt-2">
+          {{ rejectionsStore.currentApplication.rejectionOther }}
+        </p>
+      </AppCard>
+
+      <AppCard
+        v-if="rejectionsStore.currentApplication.rejectionDetails"
+        class="mt-4 border-red-200 bg-white"
+      >
+        <p class="font-medium text-navy">Reviewer details</p>
+        <p class="text-sm text-gray-600 mt-2">
+          {{ rejectionsStore.currentApplication.rejectionDetails }}
+        </p>
+      </AppCard>
+
       <div class="mt-6 space-y-3">
         <RouterLink to="/documents/scan">
           <AppButton full-width>Re-upload Documents</AppButton>

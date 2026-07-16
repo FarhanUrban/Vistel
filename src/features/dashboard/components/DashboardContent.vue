@@ -8,6 +8,7 @@ import AppLoadingSpinner from '@/components/AppLoadingSpinner.vue'
 import AppModal from '@/components/AppModal.vue'
 import CountryFlag from '@/components/CountryFlag.vue'
 import ApplicationStatusBadge from '@/features/dashboard/components/ApplicationStatusBadge.vue'
+import ApplicantInbox from '@/features/dashboard/components/ApplicantInbox.vue'
 import { useDashboardStore } from '@/features/dashboard/store'
 import { useOnboardingStore } from '@/features/onboarding/store'
 import { useDocumentsStore } from '@/features/documents/store'
@@ -113,13 +114,20 @@ function openInterview(interview: Interview) {
   <div>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <h1 class="text-2xl font-semibold text-navy lg:text-3xl">Dashboard</h1>
-      <AppButton variant="secondary" @click="startNewVisa">Apply for new visa</AppButton>
+      <div class="flex flex-wrap gap-2">
+        <AppButton variant="outline" @click="router.push({ name: 'DashboardHistory' })">
+          History
+        </AppButton>
+        <AppButton variant="secondary" @click="startNewVisa">Apply for new visa</AppButton>
+      </div>
     </div>
 
     <AppErrorMessage v-if="dashboardStore.error" :message="dashboardStore.error" class="mb-4" />
     <AppLoadingSpinner v-if="dashboardStore.isLoading" />
 
     <template v-else>
+      <ApplicantInbox />
+
       <section v-if="workingOnDrafts.length > 0" class="mb-8">
         <h2 class="mb-3 text-lg font-medium text-navy">Working on</h2>
         <div class="space-y-3">
@@ -154,14 +162,18 @@ function openInterview(interview: Interview) {
       </section>
 
       <section v-if="dashboardStore.reviewingApplications.length > 0" class="mb-8">
-        <h2 class="mb-3 text-lg font-medium text-navy">Waiting on visa</h2>
+        <h2 class="mb-3 text-lg font-medium text-navy">Pending review</h2>
+        <p class="mb-3 text-sm text-navy/60">
+          Your application is with an authorized reviewer. You will be notified when a decision is
+          made.
+        </p>
         <div class="space-y-3">
           <AppCard
             v-for="app in dashboardStore.reviewingApplications"
             :key="app.id"
             padding="sm"
-            class="cursor-pointer transition-colors hover:border-accent-blue/50"
-            @click="openDocumentsForCountry(app.destinationCountry, app.visaType)"
+            class="cursor-default transition-colors border-l-4 border-amber-400"
+            @click="undefined"
           >
             <div class="flex items-start justify-between gap-3">
               <div class="flex min-w-0 items-start gap-3">

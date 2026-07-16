@@ -54,7 +54,7 @@ async function handleDeleteAccount() {
     showDeleteModal.value = false
     router.push({ name: 'Welcome', query: { accountDeleted: '1' } })
   } catch {
-    // Error surfaced via authStore.error
+    // Error surfaced via authStore.error — keep modal open so the user can retry.
   }
 }
 </script>
@@ -115,7 +115,8 @@ async function handleDeleteAccount() {
           placeholder="Required for email sign-in"
         />
         <p v-else class="text-sm text-gray-500">
-          You'll confirm your identity in a popup when you delete.
+          You'll confirm your identity in a Google popup when you delete. Allow popups and pause
+          any ad blocker on this site so confirmation can finish.
         </p>
         <AppInput
           v-model="deleteConfirmText"

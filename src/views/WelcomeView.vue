@@ -59,6 +59,13 @@ function dismissDeletedBanner() {
         Document files are stored securely in the cloud. Application progress on this device may be
         cleared if you wipe browser data.
       </p>
+      <p class="mt-4 text-center text-xs text-gray-400">
+        <RouterLink to="/agency" class="hover:text-navy/60">Agency portal</RouterLink>
+        ·
+        <RouterLink to="/privacy" class="hover:text-navy/60">Privacy</RouterLink>
+        ·
+        <RouterLink to="/terms" class="hover:text-navy/60">Terms</RouterLink>
+      </p>
     </AppCard>
   </AuthLayout>
 </template>

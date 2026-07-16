@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AppSearchInput from '@/components/AppSearchInput.vue'
 import AppListRow from '@/components/AppListRow.vue'
 import AppBadge from '@/components/AppBadge.vue'
@@ -13,6 +13,12 @@ import {
   normalizeRequirement,
   searchCountries,
 } from '@/services/visaIndexService'
+import {
+  getDestinationAvailability,
+  isDestinationAvailable,
+} from '@/services/agencyOrgService'
+import { applyRemoteCountryKeys, platformRevision } from '@/services/platformStorage'
+import type { CountryKeyRegistryEntry } from '@/types'
 
 const props = withDefaults(
   defineProps<{
@@ -35,6 +41,20 @@ const emit = defineEmits<{
 const query = ref('')
 const showMobileDetail = ref(false)
 
+onMounted(async () => {
+  if (props.mode !== 'destination') return
+  try {
+    const res = await fetch('/api/platform/country-keys')
+    if (!res.ok) return
+    const data = (await res.json()) as { keys?: CountryKeyRegistryEntry[] }
+    if (Array.isArray(data.keys) && data.keys.length > 0) {
+      applyRemoteCountryKeys(data.keys)
+    }
+  } catch {
+    // Availability stays gated until keys load.
+  }
+})
+
 const countries = computed(() => searchCountries(query.value, props.passportIso2 ?? undefined))
 
 const selectedIso2 = computed({
@@ -50,8 +70,23 @@ function requirementFor(iso2: string) {
 }
 
 function selectCountry(iso2: string) {
+  if (props.mode === 'destination' && !isDestinationAvailable(iso2)) return
   selectedIso2.value = iso2
   showMobileDetail.value = true
+}
+
+function countryLive(iso2: string): boolean {
+  if (props.mode !== 'destination') return true
+  void platformRevision.value
+  return isDestinationAvailable(iso2)
+}
+
+function destinationStatusLabel(iso2: string): string {
+  void platformRevision.value
+  const status = getDestinationAvailability(iso2)
+  if (status === 'available') return ''
+  if (status === 'onboarding') return 'Agency onboarding'
+  return 'Coming soon'
 }
 
 function handleContinue() {
@@ -77,14 +112,26 @@ function closeMobileDetail() {
           <AppListRow
             :label="country.name"
             :selected="selectedIso2 === country.iso2"
+            :class="!countryLive(country.iso2) ? 'opacity-50' : ''"
             @click="selectCountry(country.iso2)"
           >
             <template #leading>
               <CountryFlag :iso2="country.iso2" />
             </template>
-            <template v-if="mode === 'destination' && passportIso2" #trailing>
+            <template v-if="mode === 'destination'" #trailing>
+              <span
+                v-if="!countryLive(country.iso2)"
+                class="text-xxs font-medium text-navy/45"
+                :title="
+                  destinationStatusLabel(country.iso2) === 'Agency onboarding'
+                    ? 'An agency is assigned but encryption setup is not finished yet'
+                    : 'Coming soon — we are onboarding agencies for this destination'
+                "
+              >
+                {{ destinationStatusLabel(country.iso2) }}
+              </span>
               <AppBadge
-                v-if="requirementFor(country.iso2)"
+                v-else-if="passportIso2 && requirementFor(country.iso2)"
                 :category="requirementFor(country.iso2)!.category"
               >
                 {{ requirementFor(country.iso2)!.label }}

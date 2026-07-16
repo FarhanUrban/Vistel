@@ -18,20 +18,21 @@ const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
 
-function afterLogin() {
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
-  router.push(getPostAuthRoute(redirect, authStore.user?.role))
-}
-
 async function handleSubmit() {
   await authStore.login(email.value, password.value)
-  if (authStore.user) {
-    afterLogin()
-  }
+  if (!authStore.user) return
+  // Wait a tick so route guards see the updated auth user (fixes admin blank until reload).
+  await router.isReady()
+  await afterLogin()
+}
+
+async function afterLogin() {
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
+  await router.push(getPostAuthRoute(redirect, authStore.user?.role))
 }
 
 function handleSocialSuccess() {
-  afterLogin()
+  void afterLogin()
 }
 </script>
 

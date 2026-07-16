@@ -69,6 +69,23 @@ export const usePaymentsStore = defineStore('payments', () => {
         paidAt,
         expiresAt: app ? visaExpiryFromPaidAt(paidAt, app.visaType) : undefined,
       })
+      if (app && feeBreakdown.value) {
+        const { appendPaymentRecord } = await import('@/services/platformStorage')
+        const { useAuthStore } = await import('@/features/auth/store')
+        const auth = useAuthStore()
+        appendPaymentRecord({
+          id: `pay-${Date.now()}`,
+          userId: auth.user?.id ?? app.userId,
+          applicationId: applicationId.value,
+          destinationCountry: app.destinationCountry,
+          visaType: app.visaType,
+          amount: feeBreakdown.value.total,
+          currency: feeBreakdown.value.currency,
+          transactionId: result.transactionId,
+          paidAt,
+          status: 'success',
+        })
+      }
       status.value = 'success'
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Payment failed'

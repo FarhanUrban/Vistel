@@ -1,0 +1,12 @@
+# Cloudflare Pages applies the LAST matching redirect when a static file is
+# missing. Asset 404 rules must come AFTER the SPA catch-all or missing
+# /m11/*.js requests get index.html with status 200 — blank pages + reload loops.
+
+# SPA client routes
+/*    /index.html   200
+
+# Hashed assets: real 404 (never HTML-as-JS/CSS)
+/m8/*   /m8/404.html   404
+/m9/*   /m9/404.html   404
+/m10/*  /m10/404.html  404
+/m11/*  /m11/404.html  404

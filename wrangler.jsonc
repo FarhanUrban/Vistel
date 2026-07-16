@@ -4,7 +4,8 @@
   "pages_build_output_dir": "dist",
   "compatibility_date": "2026-07-14",
   "vars": {
-    "FIREBASE_PROJECT_ID": "vislet"
+    "FIREBASE_PROJECT_ID": "vislet",
+    "PORTAL_BRIDGE_SECRET": "vislet-portal-bridge-v1"
   },
   "r2_buckets": [
     {

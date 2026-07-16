@@ -24,6 +24,9 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       user.value = await authService.signIn(email, password)
+      // Re-hydrate R2 platform state now that portal/Firebase auth is available.
+      const { hydratePlatformFromRemote } = await import('@/services/platformStorage')
+      await hydratePlatformFromRemote()
     } catch (e) {
       error.value = formatAuthError(e)
     } finally {

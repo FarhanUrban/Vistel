@@ -23,7 +23,7 @@ body {
 #app {
   @apply min-h-screen;
   /* deploy-cache-bust: 2026-07-15-portal-v5 */
-  --vislet-asset-rev: 8;
+  --vislet-asset-rev: 9;
 }
 
 .safe-area-bottom {

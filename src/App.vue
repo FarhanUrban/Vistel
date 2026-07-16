@@ -19,8 +19,7 @@ watch(
     }
 
     link.type = 'image/png'
-    // Point to the renamed asset and append a unique timestamp
-    link.href = `/logo-v2.png?t=${new Date().getTime()}`
+    link.href = '/logo-v2.png'
   },
   { immediate: true },
 )

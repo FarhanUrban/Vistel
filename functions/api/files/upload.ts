@@ -5,6 +5,8 @@ interface UploadFields {
   destinationCountry: string
   visaType: string
   fileName: string
+  applicationId?: string
+  encrypted?: boolean
 }
 
 function readFields(form: FormData): UploadFields {
@@ -14,13 +16,15 @@ function readFields(form: FormData): UploadFields {
     .toUpperCase()
   const visaType = String(form.get('visaType') ?? '').trim()
   const fileName = String(form.get('fileName') ?? '').trim()
+  const applicationId = String(form.get('applicationId') ?? '').trim() || undefined
+  const encrypted = String(form.get('encrypted') ?? '').trim() === 'true'
   if (!documentTypeId || !destinationCountry || !visaType || !fileName) {
     throw json(
       { error: 'documentTypeId, destinationCountry, visaType, and fileName are required' },
       400,
     )
   }
-  return { documentTypeId, destinationCountry, visaType, fileName }
+  return { documentTypeId, destinationCountry, visaType, fileName, applicationId, encrypted }
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
@@ -38,11 +42,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const fields = readFields(form)
     const safeName = sanitizeFileName(fields.fileName || file.name)
-    const key = `users/${uid}/documents/${fields.destinationCountry}_${fields.visaType}_${fields.documentTypeId}_${Date.now()}_${safeName}`
+    const appSegment = fields.applicationId ?? 'draft'
+    const key = fields.applicationId
+      ? `applicants/${fields.destinationCountry}/${appSegment}/${fields.documentTypeId}_${Date.now()}_${safeName}`
+      : `users/${uid}/documents/${fields.destinationCountry}_${fields.visaType}_${fields.documentTypeId}_${Date.now()}_${safeName}`
 
     await context.env.CLIENT_DATA.put(key, file.stream(), {
       httpMetadata: {
-        contentType: file.type || 'application/octet-stream',
+        contentType: fields.encrypted
+          ? 'application/json'
+          : file.type || 'application/octet-stream',
       },
       customMetadata: {
         userId: uid,
@@ -50,6 +59,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         destinationCountry: fields.destinationCountry,
         visaType: fields.visaType,
         originalName: file.name,
+        encrypted: fields.encrypted ? 'true' : 'false',
       },
     })
 

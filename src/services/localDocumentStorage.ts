@@ -1,8 +1,10 @@
 import type { UploadedDocument, VisaApplication, VisaType } from '@/types'
+import {
+  loadApplicationsMemory,
+  saveApplicationsMemory,
+  wipePlatformLocalData,
+} from './platformStorage'
 
-const DOCS_KEY = 'vislet_uploaded_docs'
-const APPS_KEY = 'vislet_applications'
-const PORTAL_USER_KEY = 'vislet_portal_user'
 const MAX_REJECTED_APPS_PER_USER = 10
 
 interface StoredDocRecord {
@@ -21,35 +23,25 @@ export interface DocumentScope {
   visaType: VisaType
 }
 
+/** In-memory document metadata only — never written to localStorage. */
+let docsMemory: StoredDocRecord[] = []
+
 function loadDocs(): StoredDocRecord[] {
-  const raw = localStorage.getItem(DOCS_KEY)
-  if (!raw) return []
-  try {
-    return JSON.parse(raw) as StoredDocRecord[]
-  } catch {
-    return []
-  }
+  return docsMemory
 }
 
 function saveDocs(docs: StoredDocRecord[]): void {
-  localStorage.setItem(DOCS_KEY, JSON.stringify(docs))
+  docsMemory = docs
 }
 
 function loadApps(): VisaApplication[] {
-  const raw = localStorage.getItem(APPS_KEY)
-  if (!raw) return []
-  try {
-    return JSON.parse(raw) as VisaApplication[]
-  } catch {
-    return []
-  }
+  return loadApplicationsMemory()
 }
 
 function saveApps(apps: VisaApplication[]): void {
-  localStorage.setItem(APPS_KEY, JSON.stringify(pruneRejectedApps(apps)))
+  void saveApplicationsMemory(pruneRejectedApps(apps))
 }
 
-/** Keep storage bounded: at most N rejected apps per userId. */
 function pruneRejectedApps(apps: VisaApplication[]): VisaApplication[] {
   const rejectedByUser = new Map<string, VisaApplication[]>()
   const keep: VisaApplication[] = []
@@ -134,7 +126,6 @@ function upsertAgencyApplication(application: VisaApplication): string {
   return application.id
 }
 
-/** Persist document metadata (local, R2, or firebase) without growing duplicates. */
 export function upsertStoredDocumentMeta(
   userId: string,
   documentTypeId: string,
@@ -166,7 +157,7 @@ export function upsertStoredDocumentMeta(
   return {
     id: record.id,
     name: record.name,
-    url: record.url ?? `local://${record.id}`,
+    url: record.url ?? `memory://${record.id}`,
     uploadedAt: record.uploadedAt,
     documentTypeId,
     destinationCountry: record.destinationCountry,
@@ -174,7 +165,6 @@ export function upsertStoredDocumentMeta(
   }
 }
 
-/** Simulates an upload — stores metadata in localStorage only (no cloud). */
 export async function pretendUploadDocument(
   file: File,
   userId: string,
@@ -188,7 +178,7 @@ export async function pretendUploadDocument(
   }
 
   const uploadedAt = new Date().toISOString()
-  const id = `local_${userId}_${scope.destinationCountry}_${scope.visaType}_${documentTypeId}_${Date.now()}`
+  const id = `mem_${userId}_${scope.destinationCountry}_${scope.visaType}_${documentTypeId}_${Date.now()}`
   const objectUrl = URL.createObjectURL(file)
 
   try {
@@ -199,7 +189,6 @@ export async function pretendUploadDocument(
       url: objectUrl,
     })
   } finally {
-    // Revoke after a tick so callers can use the URL briefly if needed.
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
   }
 }
@@ -219,7 +208,7 @@ export function getStoredDocuments(userId: string, scope?: DocumentScope): Uploa
       documentTypeId: doc.documentTypeId,
       destinationCountry: doc.destinationCountry,
       visaType: doc.visaType,
-      url: doc.url ?? `local://${doc.id}`,
+      url: doc.url ?? `memory://${doc.id}`,
     }))
 }
 
@@ -245,12 +234,23 @@ export function saveLocalApplication(
   visaType: VisaType,
   documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[] = [],
   answers: Record<string, string> = {},
+  extras: Partial<
+    Pick<
+      VisaApplication,
+      | 'encrypted'
+      | 'encryptedPayloadRef'
+      | 'agencyId'
+      | 'orgId'
+      | 'clientName'
+      | 'clientEmail'
+    >
+  > = {},
 ): string {
   const application: VisaApplication = {
     id: `app-${Date.now()}`,
     userId,
     status: 'submitted',
-    destinationCountry,
+    destinationCountry: destinationCountry.toUpperCase(),
     visaType,
     submittedAt: new Date().toISOString(),
     documents: documents.map((doc) => ({
@@ -259,7 +259,9 @@ export function saveLocalApplication(
       uploadedAt: doc.uploadedAt,
       documentTypeId: doc.documentTypeId,
     })),
-    answers,
+    // Sensitive answers stay out of the cleartext application record when encrypted.
+    answers: extras.encrypted ? {} : answers,
+    ...extras,
   }
   return upsertUserApplication(application)
 }
@@ -324,17 +326,46 @@ export function clearLocalApplications(userId: string): void {
   saveApps(loadApps().filter((app) => app.userId !== userId))
 }
 
-/** Clears all Vislet localStorage keys used by the app (full reset). */
+const LEGACY_LOCAL_KEYS = [
+  'vislet_uploaded_docs',
+  'vislet_applications',
+  'vislet_onboarding',
+  'vislet_onboarding_drafts',
+  'vislet_mock_user',
+  'vislet_portal_user',
+  'vislet_agency_orgs',
+  'vislet_country_keys',
+  'vislet_notifications',
+  'vislet_audit_log',
+  'vislet_submission_log',
+  'vislet_agency_key_vault',
+  'vislet_encrypted_payloads',
+  'vislet_platform_seeded',
+  'vislet_rejection_codes',
+  'vislet_payment_history',
+  'vislet_org_invite_passwords',
+  'vislet_promo_banner',
+  'vislet_promo_banner_dismissed',
+]
+
+/** Clears legacy localStorage leftovers and in-memory platform state. */
 export function wipeAllVisletLocalData(): void {
-  localStorage.removeItem(DOCS_KEY)
-  localStorage.removeItem(APPS_KEY)
-  localStorage.removeItem('vislet_onboarding')
-  localStorage.removeItem('vislet_onboarding_drafts')
-  localStorage.removeItem('vislet_mock_user')
-  localStorage.removeItem(PORTAL_USER_KEY)
+  docsMemory = []
+  for (const key of LEGACY_LOCAL_KEYS) {
+    try {
+      localStorage.removeItem(key)
+    } catch {
+      // ignore
+    }
+  }
+  try {
+    sessionStorage.removeItem('vislet_portal_session')
+  } catch {
+    // ignore
+  }
+  wipePlatformLocalData()
 }
 
-/** Visa validity length from payment date. */
 export function visaExpiryFromPaidAt(paidAt: string, visaType: VisaType): string {
   const days = visaType === 'e-visa' ? 90 : visaType === 'tourist' ? 180 : 365
   const date = new Date(paidAt)
