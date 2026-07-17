@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import AppButton from '@/components/AppButton.vue'
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '@/services/contactConfig'
 
 const router = useRouter()
 </script>
@@ -37,11 +38,11 @@ const router = useRouter()
       </section>
 
       <section class="space-y-2">
-        <h2 class="text-lg font-bold text-navy">Encryption</h2>
+        <h2 class="text-lg font-bold text-navy">Access control</h2>
         <p>
-          Sensitive application answers and document metadata are encrypted to the destination
-          country’s public key. Private keys are held by the reviewing agency, not Vislet admins.
-          Admins see aggregate counts only, not application contents.
+          Application answers and documents are stored in authorized cloud storage and transmitted
+          over HTTPS. Only the assigned reviewing agency and platform administrators can access a
+          submission after signing in. Applicants can view their own applications and decisions.
         </p>
       </section>
 
@@ -70,8 +71,13 @@ const router = useRouter()
       </section>
 
       <section class="space-y-2">
-        <h2 class="text-lg font-bold text-navy">Contact</h2>
-        <p>Questions: hello@vislet.org</p>
+        <h2 class="text-lg font-bold text-navy">Customer Support</h2>
+        <p>
+          Questions:
+          <a :href="SUPPORT_MAILTO" class="font-medium text-accent-blue hover:underline">
+            {{ SUPPORT_EMAIL }}
+          </a>
+        </p>
       </section>
     </main>
   </div>

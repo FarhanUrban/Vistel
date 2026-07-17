@@ -17,8 +17,7 @@ import {
   getDestinationAvailability,
   isDestinationAvailable,
 } from '@/services/agencyOrgService'
-import { applyRemoteCountryKeys, platformRevision } from '@/services/platformStorage'
-import type { CountryKeyRegistryEntry } from '@/types'
+import { hydratePlatformFromRemote, platformRevision } from '@/services/platformStorage'
 
 const props = withDefaults(
   defineProps<{
@@ -44,14 +43,9 @@ const showMobileDetail = ref(false)
 onMounted(async () => {
   if (props.mode !== 'destination') return
   try {
-    const res = await fetch('/api/platform/country-keys')
-    if (!res.ok) return
-    const data = (await res.json()) as { keys?: CountryKeyRegistryEntry[] }
-    if (Array.isArray(data.keys) && data.keys.length > 0) {
-      applyRemoteCountryKeys(data.keys)
-    }
+    await hydratePlatformFromRemote()
   } catch {
-    // Availability stays gated until keys load.
+    // Availability uses currently hydrated orgs.
   }
 })
 

@@ -45,44 +45,19 @@ export async function buildPortalAuthHeader(user: User): Promise<string | null> 
   return `Portal ${btoa(body)}`
 }
 
+/** Memory-only identity for this tab; durable auth is the D1 session cookie. */
 export function persistPortalSession(user: User): void {
   memorySession = { ...user }
-  const session: PortalSession = {
-    id: user.id,
-    email: user.email,
-    displayName: user.displayName,
-    role: user.role ?? 'user',
-    orgId: user.orgId,
-    orgKind: user.orgKind,
-    mustChangePassword: user.mustChangePassword,
-  }
   try {
-    sessionStorage.setItem(PORTAL_SESSION_KEY, JSON.stringify(session))
+    // Purge any legacy browser-persisted portal identity.
+    sessionStorage.removeItem(PORTAL_SESSION_KEY)
   } catch {
-    // Memory session still available for this tab.
+    // ignore
   }
 }
 
 export function readPortalSession(): User | null {
-  if (memorySession) return { ...memorySession }
-  try {
-    const raw = sessionStorage.getItem(PORTAL_SESSION_KEY)
-    if (!raw) return null
-    const session = JSON.parse(raw) as PortalSession
-    const user: User = {
-      id: session.id,
-      email: session.email,
-      displayName: session.displayName,
-      role: session.role,
-      orgId: session.orgId,
-      orgKind: session.orgKind,
-      mustChangePassword: session.mustChangePassword,
-    }
-    memorySession = user
-    return user
-  } catch {
-    return null
-  }
+  return memorySession ? { ...memorySession } : null
 }
 
 export function clearPortalSession(): void {

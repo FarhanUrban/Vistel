@@ -70,9 +70,10 @@ function goToDashboard() {
       <AppCard class="mb-6">
         <h2 class="font-medium text-navy mb-3">What happens next</h2>
         <ul class="space-y-2 text-sm text-gray-600 list-disc pl-5">
-          <li>A reviewer decrypts and evaluates your application securely.</li>
+          <li>An authorized reviewer evaluates your application and documents.</li>
           <li>You will receive an inbox notification when approved or rejected.</li>
-          <li>If approved, you can proceed to payment from your dashboard.</li>
+          <li>If approved, continue to payment from your dashboard.</li>
+          <li>If rejected, you will see the reason and can resubmit updated documents.</li>
         </ul>
       </AppCard>
 

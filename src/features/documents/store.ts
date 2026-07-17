@@ -15,6 +15,8 @@ export const useDocumentsStore = defineStore('documents', () => {
   const error = ref<string | null>(null)
   const isSubmitted = ref(false)
   const lastApplicationId = ref<string | null>(null)
+  const clientLegalName = ref('')
+  const resubmissionOf = ref<string | null>(null)
 
   function currentScope() {
     const onboarding = useOnboardingStore()
@@ -141,8 +143,19 @@ export const useDocumentsStore = defineStore('documents', () => {
   }
 
   const canFinalize = computed(
-    () => allRequiredUploaded() && allRequiredAnswered(),
+    () =>
+      allRequiredUploaded() &&
+      allRequiredAnswered() &&
+      clientLegalName.value.trim().length >= 2,
   )
+
+  function setClientLegalName(name: string) {
+    clientLegalName.value = name
+  }
+
+  function beginResubmission(applicationId: string) {
+    resubmissionOf.value = applicationId
+  }
 
   async function submitApplication() {
     const auth = useAuthStore()
@@ -165,6 +178,10 @@ export const useDocumentsStore = defineStore('documents', () => {
       error.value = 'Please answer all required application questions before submitting'
       return
     }
+    if (!clientLegalName.value.trim()) {
+      error.value = 'Please enter your full legal name before submitting'
+      return
+    }
 
     isSubmitting.value = true
     error.value = null
@@ -175,9 +192,16 @@ export const useDocumentsStore = defineStore('documents', () => {
         visaType: onboarding.visaType,
         documents: uploadedDocuments.value,
         answers: { ...answers.value },
+        clientName: clientLegalName.value.trim(),
+        clientEmail: auth.user.email || undefined,
+        passportCountry: onboarding.passportCountry,
+        passportType: onboarding.passportType,
+        hasAdditionalDocs: onboarding.hasAdditionalDocs,
+        resubmissionOf: resubmissionOf.value || undefined,
       })
       lastApplicationId.value = applicationId
       isSubmitted.value = true
+      resubmissionOf.value = null
       onboarding.removeDraft(onboarding.destinationCountry, onboarding.visaType)
       return applicationId
     } catch (e) {
@@ -197,11 +221,15 @@ export const useDocumentsStore = defineStore('documents', () => {
     error.value = null
     isSubmitted.value = false
     lastApplicationId.value = null
+    clientLegalName.value = ''
+    resubmissionOf.value = null
   }
 
   function resetForNewApplication() {
     uploadedDocuments.value = []
     requiredDocuments.value = []
+    clientLegalName.value = ''
+    // Keep resubmissionOf when retrying a rejection.
     visaQuestions.value = []
     answers.value = {}
     isSubmitted.value = false
@@ -219,10 +247,14 @@ export const useDocumentsStore = defineStore('documents', () => {
     error,
     isSubmitted,
     lastApplicationId,
+    clientLegalName,
+    resubmissionOf,
     canFinalize,
     loadRequiredDocuments,
     loadVisaQuestions,
     setAnswer,
+    setClientLegalName,
+    beginResubmission,
     uploadDocument,
     submitApplication,
     allRequiredUploaded,

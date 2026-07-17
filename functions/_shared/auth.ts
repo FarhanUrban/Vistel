@@ -1,16 +1,23 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
+import { touchAndResolveSession } from './sessions'
 
 export interface Env {
   CLIENT_DATA: R2Bucket
+  AGENCY_LOGINS?: R2Bucket
+  OLD_CLIENT_DATA?: R2Bucket
+  DB?: D1Database
   FIREBASE_PROJECT_ID: string
   PORTAL_BRIDGE_SECRET?: string
+  MIGRATE_SECRET?: string
+  ARCHIVE_SECRET?: string
 }
 
 export interface PlatformActor {
   uid: string
   email?: string
   role?: string
-  kind: 'firebase' | 'portal'
+  kind: 'firebase' | 'portal' | 'session'
+  orgId?: string
 }
 
 const JWKS = createRemoteJWKSet(
@@ -31,7 +38,7 @@ export async function requireFirebaseUid(
   env: Env,
 ): Promise<{ uid: string; token: string }> {
   const actor = await requirePlatformActor(request, env)
-  if (actor.kind !== 'firebase') {
+  if (actor.kind === 'portal') {
     throw json({ error: 'Firebase authentication required for this endpoint' }, 401)
   }
   const header = request.headers.get('Authorization') ?? ''
@@ -72,7 +79,6 @@ async function verifyPortalHeader(
     return null
   }
 
-  // Portal tokens are for demo/admin-agency bridge accounts and org invite emails.
   const secret = env.PORTAL_BRIDGE_SECRET?.trim() || 'vislet-portal-bridge-v1'
   const payload = `${email}|${role}|${id}|${ts}`
   const expected = await sha256Hex(`${payload}|${secret}`)
@@ -85,18 +91,13 @@ async function verifyPortalHeader(
   return { uid: id, email, role, kind: 'portal' }
 }
 
-export async function requirePlatformActor(
+async function verifyFirebaseBearer(
   request: Request,
   env: Env,
-): Promise<PlatformActor> {
-  const portal = await verifyPortalHeader(request, env)
-  if (portal) return portal
-
+): Promise<PlatformActor | null> {
   const header = request.headers.get('Authorization') ?? ''
   const match = header.match(/^Bearer\s+(.+)$/i)
-  if (!match) {
-    throw json({ error: 'Missing Authorization bearer or portal token' }, 401)
-  }
+  if (!match) return null
 
   const token = match[1]
   const projectId = env.FIREBASE_PROJECT_ID?.trim()
@@ -117,7 +118,39 @@ export async function requirePlatformActor(
     return { uid, email, kind: 'firebase' }
   } catch (error) {
     if (error instanceof Response) throw error
-    throw json({ error: 'Invalid or expired auth token' }, 401)
+    return null
+  }
+}
+
+/** Verify Authorization bearer/portal without preferring the session cookie. */
+export async function authenticateFromHeaders(
+  request: Request,
+  env: Env,
+): Promise<PlatformActor | null> {
+  const portal = await verifyPortalHeader(request, env)
+  if (portal) return portal
+  return verifyFirebaseBearer(request, env)
+}
+
+export async function requirePlatformActor(
+  request: Request,
+  env: Env,
+): Promise<PlatformActor> {
+  // Prefer D1 session cookie (30-minute idle).
+  const sessionActor = await touchAndResolveSession(request, env)
+  if (sessionActor) {
+    return { ...sessionActor, kind: 'session' }
+  }
+
+  const headerActor = await authenticateFromHeaders(request, env)
+  if (headerActor) return headerActor
+
+  throw json({ error: 'Missing session, Authorization bearer, or portal token' }, 401)
+}
+
+export function requireRole(actor: PlatformActor, roles: string[]): void {
+  if (!actor.role || !roles.includes(actor.role)) {
+    throw json({ error: 'Forbidden for this role' }, 403)
   }
 }
 

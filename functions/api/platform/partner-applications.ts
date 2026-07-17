@@ -1,4 +1,5 @@
 import { json, requirePlatformActor, type Env } from '../../_shared/auth'
+import { getAgencyBucket } from '../../_shared/buckets'
 
 const PARTNER_KEY = 'admin/platform/partner-applications.json'
 
@@ -22,10 +23,8 @@ async function readList(bucket: R2Bucket): Promise<PartnerApplication[]> {
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     await requirePlatformActor(context.request, context.env)
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
-    return json({ applications: await readList(context.env.CLIENT_DATA) })
+    const bucket = getAgencyBucket(context.env)
+    return json({ applications: await readList(bucket) })
   } catch (error) {
     if (error instanceof Response) return error
     return json({ error: error instanceof Error ? error.message : 'Fetch failed' }, 500)
@@ -35,9 +34,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     // Public partner signup — no auth required.
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
+    const bucket = getAgencyBucket(context.env)
     const body = (await context.request.json()) as {
       companyName?: string
       contactEmail?: string
@@ -50,7 +47,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       return json({ error: 'companyName and contactEmail are required' }, 400)
     }
 
-    const applications = await readList(context.env.CLIENT_DATA)
+    const applications = await readList(bucket)
     const entry: PartnerApplication = {
       id: `partner-${Date.now()}`,
       companyName,
@@ -60,7 +57,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       createdAt: new Date().toISOString(),
     }
     applications.unshift(entry)
-    await context.env.CLIENT_DATA.put(
+    await bucket.put(
       PARTNER_KEY,
       JSON.stringify({ applications: applications.slice(0, 500) }),
       { httpMetadata: { contentType: 'application/json' } },
@@ -75,14 +72,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 export const onRequestPut: PagesFunction<Env> = async (context) => {
   try {
     await requirePlatformActor(context.request, context.env)
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
+    const bucket = getAgencyBucket(context.env)
     const body = (await context.request.json()) as { applications?: PartnerApplication[] }
     if (!Array.isArray(body.applications)) {
       return json({ error: 'applications array is required' }, 400)
     }
-    await context.env.CLIENT_DATA.put(
+    await bucket.put(
       PARTNER_KEY,
       JSON.stringify({ applications: body.applications }),
       { httpMetadata: { contentType: 'application/json' } },

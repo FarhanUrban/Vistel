@@ -16,7 +16,9 @@
     "firebase:deploy:firestore-rules": "firebase deploy --only firestore:rules",
     "firebase:deploy:storage-rules": "firebase deploy --only storage:rules",
     "firebase:deploy:indexes": "firebase deploy --only firestore:indexes",
-    "pages:deploy": "npm run build && wrangler pages deploy dist"
+    "pages:deploy": "npm run build && wrangler pages deploy dist",
+    "d1:migrate": "wrangler d1 migrations apply vislet-sessions",
+    "archive:deploy": "wrangler deploy --config workers/archive/wrangler.toml"
   },
   "dependencies": {
     "@dataconnect/generated": "file:src/dataconnect-generated",

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/features/auth/store'
 import {
   getUserNotifications,
   getUnreadCount,
+  hydrateNotificationsFromRemote,
   markAllNotificationsRead,
   markNotificationRead,
 } from '@/services/notificationService'
@@ -17,7 +18,9 @@ const router = useRouter()
 const notifications = ref<ApplicantNotification[]>([])
 const unreadCount = ref(0)
 
-onMounted(() => {
+onMounted(async () => {
+  const userId = authStore.user?.id
+  if (userId) await hydrateNotificationsFromRemote(userId)
   refresh()
 })
 

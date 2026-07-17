@@ -18,9 +18,10 @@ import { clearLocalApplications, clearStoredDocuments } from './localDocumentSto
 import { clearUserNotifications } from './notificationService'
 import { clearPlatformDataForUser } from './platformStorage'
 import { wipeUserR2Data } from './r2Storage'
+import { destroyServerSession } from './sessionService'
 
 const FIRESTORE_WIPE_TIMEOUT_MS = 8_000
-const R2_WIPE_TIMEOUT_MS = 20_000
+const R2_WIPE_TIMEOUT_MS = 45_000
 const REAUTH_TIMEOUT_MS = 90_000
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -80,10 +81,16 @@ async function deleteFirestoreUserData(uid: string): Promise<void> {
   }
 }
 
-async function reauthenticateUser(firebaseUser: FirebaseUser, password?: string): Promise<void> {
-  const providerId = firebaseUser.providerData[0]?.providerId ?? 'password'
+function hasPasswordProvider(firebaseUser: FirebaseUser): boolean {
+  return firebaseUser.providerData.some((p) => p.providerId === 'password')
+}
 
-  if (providerId === 'password') {
+function hasGoogleProvider(firebaseUser: FirebaseUser): boolean {
+  return firebaseUser.providerData.some((p) => p.providerId === 'google.com')
+}
+
+async function reauthenticateUser(firebaseUser: FirebaseUser, password?: string): Promise<void> {
+  if (hasPasswordProvider(firebaseUser)) {
     if (!password || !firebaseUser.email) {
       throw new Error('Password is required to delete your account')
     }
@@ -92,7 +99,7 @@ async function reauthenticateUser(firebaseUser: FirebaseUser, password?: string)
     return
   }
 
-  if (providerId === 'google.com') {
+  if (hasGoogleProvider(firebaseUser)) {
     try {
       await withTimeout(
         reauthenticateWithPopup(firebaseUser, new GoogleAuthProvider()),
@@ -121,8 +128,20 @@ function clearLocalUserData(uid: string): void {
   clearPlatformDataForUser(uid)
 }
 
-export async function deleteAccount(password?: string): Promise<void> {
+export type DeleteAccountPhase =
+  | 'idle'
+  | 'reauthenticating'
+  | 'wiping_cloud'
+  | 'deleting_auth'
+  | 'done'
+  | 'error'
+
+export async function deleteAccount(
+  password?: string,
+  onPhase?: (phase: DeleteAccountPhase) => void,
+): Promise<void> {
   if (useMockServices()) {
+    onPhase?.('done')
     return
   }
 
@@ -132,43 +151,49 @@ export async function deleteAccount(password?: string): Promise<void> {
     throw new Error('You must be signed in to delete your account')
   }
 
+  if (hasPasswordProvider(firebaseUser) && !password?.trim()) {
+    throw new Error('Password is required to delete your account')
+  }
+
   const uid = firebaseUser.uid
+  onPhase?.('reauthenticating')
   await reauthenticateUser(firebaseUser, password)
 
+  onPhase?.('wiping_cloud')
   if (useR2DocumentStorage()) {
     try {
       await withTimeout(wipeUserR2Data(), R2_WIPE_TIMEOUT_MS, 'Cloud file wipe')
-    } catch {
-      // Continue — Auth delete is the critical step.
+    } catch (error) {
+      onPhase?.('error')
+      const message = error instanceof Error ? error.message : 'Cloud file wipe failed'
+      throw new Error(
+        `${message}. Your account was not deleted. Fix the cloud wipe error and try again.`,
+      )
     }
-    clearLocalUserData(uid)
   } else if (useFirebaseDocumentStorage()) {
     try {
       await withTimeout(deleteStorageFolder(uid), FIRESTORE_WIPE_TIMEOUT_MS, 'Storage wipe')
-    } catch {
-      // Continue
+    } catch (error) {
+      onPhase?.('error')
+      throw new Error(
+        error instanceof Error
+          ? `${error.message}. Your account was not deleted.`
+          : 'Storage wipe failed. Your account was not deleted.',
+      )
     }
-  } else {
-    clearLocalUserData(uid)
   }
 
-  // Application metadata is local/R2 in production. Firestore wipe is best-effort and
-  // must not hang when ad blockers block Listen channels (ERR_BLOCKED_BY_CLIENT).
   if (useFirebaseDocumentStorage()) {
     try {
       await withTimeout(deleteFirestoreUserData(uid), FIRESTORE_WIPE_TIMEOUT_MS, 'Firestore wipe')
     } catch {
-      // Extension / leftover docs may remain; Auth delete still proceeds.
-    }
-  } else {
-    // Soft attempt with a short timeout in case a profile doc exists.
-    try {
-      await withTimeout(deleteFirestoreUserData(uid), 3_000, 'Firestore wipe')
-    } catch {
-      // Ignore — R2/local mode does not depend on Firestore.
+      // Non-fatal for hybrid modes after storage wipe succeeded.
     }
   }
 
+  onPhase?.('deleting_auth')
   await deleteUser(firebaseUser)
   clearLocalUserData(uid)
+  await destroyServerSession()
+  onPhase?.('done')
 }

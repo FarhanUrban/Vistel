@@ -12,10 +12,11 @@ function goNext() {
 
 function goBack() {
   if (authStore.user) {
-    router.push({ name: 'Dashboard' })
+    // leaveOnboarding prevents the Dashboard guard from bouncing back into the wizard.
+    router.push({ name: 'Dashboard', query: { leaveOnboarding: '1' } })
     return
   }
-  router.push({ name: 'Welcome' })
+  router.push({ name: 'Landing' })
 }
 </script>
 

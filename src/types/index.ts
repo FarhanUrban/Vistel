@@ -58,6 +58,10 @@ export interface CountryKeyRegistryEntry {
   registeredByOrgId: string
   registeredAt: string
   live: boolean
+  /** Per-agency key version id (rotation keeps older keyIds decryptable). */
+  keyId?: string
+  orgId?: string
+  lastRotatedAt?: string
 }
 
 export interface ApplicantNotification {
@@ -69,6 +73,7 @@ export interface ApplicantNotification {
   rejectionCode?: string
   rejectionOther?: string
   rejectionDetails?: string
+  acceptanceNote?: string
   message: string
   createdAt: string
   read: boolean
@@ -88,6 +93,8 @@ export interface EncryptedEnvelope {
   encryptedKey: string
   iv: string
   ciphertext: string
+  orgId?: string
+  keyId?: string
 }
 
 export type VisaType = 'e-visa' | 'tourist' | 'business' | 'student'
@@ -152,6 +159,8 @@ export interface FeeBreakdown {
   currency: string
 }
 
+export type ApplicationStorageFormat = 'server-readable-v1' | 'legacy-encrypted-v1'
+
 export interface VisaApplication {
   id: string
   userId: string
@@ -165,16 +174,24 @@ export interface VisaApplication {
   rejectionCode?: string
   rejectionOther?: string
   rejectionDetails?: string
+  acceptanceNote?: string
   documents?: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[]
   answers?: Record<string, string>
   agencyId?: string
   orgId?: string
+  keyId?: string
+  passportCountry?: string
+  passportType?: PassportType
+  hasAdditionalDocs?: boolean
   clientName?: string
   clientEmail?: string
   notes?: string
   encryptedPayloadRef?: string
-  /** When true, sensitive fields are stored only in encryptedPayloadRef. */
+  reviewedByUid?: string
+  storageFormat?: ApplicationStorageFormat
+  /** Legacy: when true, sensitive fields are stored only in encryptedPayloadRef. */
   encrypted?: boolean
+  resubmissionOf?: string
 }
 
 export interface Interview {

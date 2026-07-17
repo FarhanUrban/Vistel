@@ -93,24 +93,31 @@ export function saveCountryKeys(entries: CountryKeyRegistryEntry[]): void {
   bump()
 }
 
-/** Merge public keys from R2 into memory and notify Vue. */
+/** Merge public keys from R2 into memory and notify Vue (per-agency + country). */
 export function applyRemoteCountryKeys(remoteKeys: CountryKeyRegistryEntry[]): void {
   if (!remoteKeys.length) return
-  const byIso = new Map(memory.countryKeys.map((k) => [k.iso2.toUpperCase(), k]))
+  const keyFor = (k: CountryKeyRegistryEntry) =>
+    `${(k.orgId || k.registeredByOrgId || 'unknown').toLowerCase()}:${k.iso2.toUpperCase()}:${k.keyId || 'current'}`
+  const byKey = new Map(memory.countryKeys.map((k) => [keyFor(k), k]))
   for (const remote of remoteKeys) {
     const iso = remote.iso2.toUpperCase()
-    const existing = byIso.get(iso)
-    byIso.set(iso, {
+    const orgId = remote.orgId || remote.registeredByOrgId
+    const mapKey = keyFor({ ...remote, iso2: iso, orgId, registeredByOrgId: orgId || '' })
+    const existing = byKey.get(mapKey)
+    byKey.set(mapKey, {
       ...existing,
       ...remote,
       iso2: iso,
+      orgId,
+      registeredByOrgId: orgId || remote.registeredByOrgId || '',
+      keyId: remote.keyId || existing?.keyId,
       live: Boolean(remote.publicKeyJwk?.n && remote.publicKeyJwk?.e) || remote.live,
       publicKeyJwk: remote.publicKeyJwk?.n
         ? remote.publicKeyJwk
         : (existing?.publicKeyJwk ?? remote.publicKeyJwk),
     })
   }
-  memory.countryKeys = [...byIso.values()]
+  memory.countryKeys = [...byKey.values()]
   bump()
 }
 
@@ -185,14 +192,35 @@ export function saveAgencyKeyVault(vault: AgencyKeyVault): void {
   memory.agencyVault = vault
 }
 
-export function getUserPrivateKey(userId: string, countryIso2: string): JsonWebKey | null {
-  return memory.agencyVault[userId]?.[countryIso2.toUpperCase()] ?? null
+function vaultSlot(countryIso2: string, keyId?: string): string {
+  const iso2 = countryIso2.toUpperCase()
+  return keyId ? `${iso2}::${keyId}` : iso2
 }
 
-export function setUserPrivateKey(userId: string, countryIso2: string, jwk: JsonWebKey): void {
+export function getUserPrivateKey(
+  userId: string,
+  countryIso2: string,
+  keyId?: string,
+): JsonWebKey | null {
+  const uidVault = memory.agencyVault[userId]
+  if (!uidVault) return null
+  if (keyId) {
+    return uidVault[vaultSlot(countryIso2, keyId)] ?? uidVault[countryIso2.toUpperCase()] ?? null
+  }
+  return uidVault[countryIso2.toUpperCase()] ?? null
+}
+
+export function setUserPrivateKey(
+  userId: string,
+  countryIso2: string,
+  jwk: JsonWebKey,
+  keyId?: string,
+): void {
   const vault = { ...memory.agencyVault }
   const uidVault = { ...(vault[userId] ?? {}) }
-  uidVault[countryIso2.toUpperCase()] = jwk
+  const iso2 = countryIso2.toUpperCase()
+  uidVault[iso2] = jwk
+  if (keyId) uidVault[vaultSlot(iso2, keyId)] = jwk
   vault[userId] = uidVault
   memory.agencyVault = vault
 }
@@ -201,11 +229,13 @@ export function clearAllPrivateKeysForCountry(countryIso2: string): void {
   const iso2 = countryIso2.toUpperCase()
   const vault = { ...memory.agencyVault }
   for (const uid of Object.keys(vault)) {
-    if (vault[uid]?.[iso2]) {
-      const next = { ...vault[uid] }
-      delete next[iso2]
-      vault[uid] = next
+    const next = { ...vault[uid] }
+    for (const slot of Object.keys(next)) {
+      if (slot === iso2 || slot.startsWith(`${iso2}::`)) {
+        delete next[slot]
+      }
     }
+    vault[uid] = next
   }
   memory.agencyVault = vault
 }

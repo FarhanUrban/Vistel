@@ -2,10 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import AppModal from '@/components/AppModal.vue'
 import AppButton from '@/components/AppButton.vue'
+import AppInput from '@/components/AppInput.vue'
 import AppOptionList from '@/components/AppOptionList.vue'
 import DocumentCaptureModal from '@/features/documents/components/DocumentCaptureModal.vue'
 import { useDocumentsStore } from '@/features/documents/store'
 import { useOnboardingStore } from '@/features/onboarding/store'
+import { useAuthStore } from '@/features/auth/store'
 
 const props = defineProps<{
   open: boolean
@@ -18,6 +20,7 @@ const emit = defineEmits<{
 
 const documentsStore = useDocumentsStore()
 const onboardingStore = useOnboardingStore()
+const authStore = useAuthStore()
 
 const step = ref<'summary' | 'ask' | 'upload'>('summary')
 const captureOpen = ref(false)
@@ -55,17 +58,30 @@ const answerGroups = computed(() => {
   return [...groups.entries()].map(([category, items]) => ({ category, items }))
 })
 
+const legalName = computed({
+  get: () => documentsStore.clientLegalName,
+  set: (value: string) => documentsStore.setClientLegalName(value),
+})
+
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       step.value = 'summary'
       captureOpen.value = false
+      if (!documentsStore.clientLegalName.trim() && authStore.user?.displayName) {
+        documentsStore.setClientLegalName(authStore.user.displayName)
+      }
     }
   },
 )
 
 function continueFromSummary() {
+  if (!documentsStore.clientLegalName.trim() || documentsStore.clientLegalName.trim().length < 2) {
+    documentsStore.error = 'Enter your full legal name as it appears on your passport'
+    return
+  }
+  documentsStore.error = null
   step.value = 'ask'
 }
 
@@ -101,8 +117,16 @@ function closeGate() {
 <template>
   <AppModal :open="open && step === 'summary'" title="Review your answers" @close="closeGate">
     <p class="mb-4 text-sm text-navy/60">
-      Confirm your application answers before submitting.
+      Confirm your full legal name and application answers before submitting.
     </p>
+    <AppInput
+      v-model="legalName"
+      label="Full legal name"
+      placeholder="As it appears on your passport"
+      class="mb-4"
+      required
+    />
+    <p v-if="documentsStore.error" class="mb-3 text-sm text-red-600">{{ documentsStore.error }}</p>
     <div v-if="answerGroups.length === 0" class="mb-4 text-sm text-navy/50">
       No answers recorded.
     </div>
@@ -126,7 +150,7 @@ function closeGate() {
     <AppButton
       full-width
       variant="secondary"
-      :disabled="!documentsStore.canFinalize"
+      :disabled="!documentsStore.allRequiredUploaded() || !documentsStore.allRequiredAnswered()"
       @click="continueFromSummary"
     >
       Continue

@@ -1,40 +1,82 @@
-import { json, requireFirebaseUid, type Env } from '../../_shared/auth'
+import {
+  json,
+  requirePlatformActor,
+  type Env,
+  type PlatformActor,
+} from '../../_shared/auth'
+import { getAgencyBucket, getClientBucket } from '../../_shared/buckets'
+import { readApplications } from '../../_shared/applications'
 
-function userCanAccessKey(uid: string, key: string): boolean {
-  if (key.startsWith(`users/${uid}/`)) return true
-  if (key.startsWith('applicants/')) {
-    // Applicant ciphertext under country partition; auth uid must match object metadata userId.
+async function actorCanAccessApplicantObject(
+  env: Env,
+  actor: PlatformActor,
+  key: string,
+  ownerId: string | undefined,
+  orgIdMeta: string | undefined,
+): Promise<boolean> {
+  if (ownerId && ownerId === actor.uid) return true
+  if (actor.role === 'admin') return true
+
+  const parts = key.split('/')
+  // applicants/{iso2}/{applicationId}/...
+  const applicationId = parts[2]
+  if (!applicationId) return false
+
+  const apps = await readApplications(env)
+  const app = apps.find((a) => a.id === applicationId)
+  if (!app) {
+    return Boolean(
+      actor.role === 'agency' &&
+        actor.orgId &&
+        orgIdMeta &&
+        actor.orgId === orgIdMeta,
+    )
+  }
+  if (app.userId === actor.uid) return true
+  if (actor.role === 'admin') return true
+  // Exact org membership required — no role-only fallback.
+  if (actor.role === 'agency' && actor.orgId && app.orgId && actor.orgId === app.orgId) {
     return true
   }
-  if (key.startsWith(`agency/`)) return true
-  if (key.startsWith('admin/')) return false
   return false
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
-    const { uid } = await requireFirebaseUid(context.request, context.env)
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
+    const actor = await requirePlatformActor(context.request, context.env)
 
     const url = new URL(context.request.url)
     const key = url.searchParams.get('key')?.trim()
     if (!key) {
       return json({ error: 'key is required' }, 400)
     }
-    if (!userCanAccessKey(uid, key)) {
+
+    let object: R2ObjectBody | null = null
+    if (key.startsWith('users/')) {
+      if (!key.startsWith(`users/${actor.uid}/`)) {
+        return json({ error: 'Forbidden' }, 403)
+      }
+      object = await getClientBucket(context.env).get(key)
+    } else if (key.startsWith('applicants/')) {
+      object = await getAgencyBucket(context.env).get(key)
+      if (!object && context.env.CLIENT_DATA && context.env.AGENCY_LOGINS) {
+        object = await context.env.CLIENT_DATA.get(key)
+      }
+      if (!object) return json({ error: 'Not found' }, 404)
+      const allowed = await actorCanAccessApplicantObject(
+        context.env,
+        actor,
+        key,
+        object.customMetadata?.userId,
+        object.customMetadata?.orgId,
+      )
+      if (!allowed) return json({ error: 'Forbidden' }, 403)
+    } else {
       return json({ error: 'Forbidden' }, 403)
     }
 
-    const object = await context.env.CLIENT_DATA.get(key)
     if (!object) {
       return json({ error: 'Not found' }, 404)
-    }
-
-    const ownerId = object.customMetadata?.userId
-    if (key.startsWith('applicants/') && ownerId && ownerId !== uid) {
-      return json({ error: 'Forbidden' }, 403)
     }
 
     const headers = new Headers()

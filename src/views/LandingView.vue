@@ -22,13 +22,9 @@ import {
   dismissPromoBanner,
   type PromoBannerConfig,
 } from '@/services/promoBannerService'
-import {
-  applyRemoteCountryKeys,
-  hydratePlatformFromRemote,
-  platformRevision,
-} from '@/services/platformStorage'
-import type { CountryKeyRegistryEntry } from '@/types'
+import { hydratePlatformFromRemote, platformRevision } from '@/services/platformStorage'
 import AppButton from '@/components/AppButton.vue'
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '@/services/contactConfig'
 
 const router = useRouter()
 const onboardingStore = useOnboardingStore()
@@ -92,6 +88,9 @@ const destinationCards = computed<DestinationCard[]>(() => {
   })
 })
 
+const supportEmail = SUPPORT_EMAIL
+const supportMailto = SUPPORT_MAILTO
+
 const faqItems = [
   {
     q: 'How do I apply for a visa or e-visa?',
@@ -99,7 +98,7 @@ const faqItems = [
   },
   {
     q: 'Why can’t I select some destinations?',
-    a: 'Destinations open once a reviewing agency has finished encryption setup. “Agency onboarding” means a partner is assigned but not ready yet.',
+    a: 'Destinations open once an active reviewing agency is assigned. “Agency onboarding” means a partner is still being set up.',
   },
   {
     q: 'How long does review take?',
@@ -110,16 +109,24 @@ const faqItems = [
     a: 'You’ll see a rejection code with a clear explanation so you know what to fix before applying again.',
   },
   {
+    q: 'Can I get a refund after purchasing a visa?',
+    a: 'No. Visa purchases are final. Once you complete payment for a visa or e-visa application, refunds are not available.',
+  },
+  {
+    q: 'How do I contact customer support?',
+    a: `Email us at ${SUPPORT_EMAIL}. We can help with account access, application status questions, and partner onboarding.`,
+  },
+  {
     q: 'How do agencies get set up?',
-    a: 'An admin creates your organization, assigns destination countries, and shares a temporary password. You then run the encryption setup wizard.',
+    a: 'An admin creates your organization, assigns destination countries, and shares a temporary password so reviewers can sign in.',
   },
   {
     q: 'What are rejection codes?',
     a: 'Standardized reasons agencies choose when rejecting an application. Applicants see the title and description in their dashboard.',
   },
   {
-    q: 'How is my data encrypted?',
-    a: 'Sensitive answers and document metadata are encrypted to the destination country’s public key. Only the reviewing agency with the private key can decrypt them.',
+    q: 'How is my data protected?',
+    a: 'Applications and documents are stored in authorized cloud storage. Only the assigned reviewing agency and platform admins can access them after login.',
   },
   {
     q: 'Is payment real?',
@@ -153,19 +160,6 @@ const howItWorksSteps = [
 ]
 
 onMounted(async () => {
-  // Load public encryption keys directly so destinations unlock even if the
-  // shared hydrate helper is delayed or partially unauthenticated.
-  try {
-    const res = await fetch('/api/platform/country-keys')
-    if (res.ok) {
-      const data = (await res.json()) as { keys?: CountryKeyRegistryEntry[] }
-      if (Array.isArray(data.keys) && data.keys.length > 0) {
-        applyRemoteCountryKeys(data.keys)
-      }
-    }
-  } catch (error) {
-    console.warn('[landing] country key prefetch failed', error)
-  }
   await hydratePlatformFromRemote()
   promoConfig.value = getPromoBannerConfig()
   showPromo.value = shouldShowPromoBanner()
@@ -741,7 +735,12 @@ async function goToCarouselDot(index: number) {
             <div>
               <p class="text-xs font-bold uppercase tracking-wider text-surface/40">Contact</p>
               <ul class="mt-3 space-y-2 text-sm text-surface/75">
-                <li>hello@vislet.org</li>
+                <li>
+                  <a :href="supportMailto" class="hover:text-surface">Customer Support</a>
+                </li>
+                <li>
+                  <a :href="supportMailto" class="hover:text-surface">{{ supportEmail }}</a>
+                </li>
                 <li>Urban Arts / Vislet</li>
               </ul>
             </div>

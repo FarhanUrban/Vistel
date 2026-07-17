@@ -1,14 +1,13 @@
 import { json, requirePlatformActor, type Env } from '../../_shared/auth'
+import { getAgencyBucket } from '../../_shared/buckets'
 
 const CODES_KEY = 'admin/platform/rejection-codes.json'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     await requirePlatformActor(context.request, context.env)
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
-    const object = await context.env.CLIENT_DATA.get(CODES_KEY)
+    const bucket = getAgencyBucket(context.env)
+    const object = await bucket.get(CODES_KEY)
     if (!object) return json({ codes: [] })
     const data = (await object.json()) as { codes?: unknown }
     return json({ codes: Array.isArray(data.codes) ? data.codes : data })
@@ -21,14 +20,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 export const onRequestPut: PagesFunction<Env> = async (context) => {
   try {
     await requirePlatformActor(context.request, context.env)
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
+    const bucket = getAgencyBucket(context.env)
     const body = (await context.request.json()) as { codes?: unknown }
     if (!Array.isArray(body.codes)) {
       return json({ error: 'codes array is required' }, 400)
     }
-    await context.env.CLIENT_DATA.put(CODES_KEY, JSON.stringify({ codes: body.codes }), {
+    await bucket.put(CODES_KEY, JSON.stringify({ codes: body.codes }), {
       httpMetadata: { contentType: 'application/json' },
     })
     return json({ ok: true })

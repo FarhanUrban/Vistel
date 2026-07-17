@@ -1,14 +1,13 @@
 import { json, requirePlatformActor, type Env } from '../../_shared/auth'
+import { getAgencyBucket } from '../../_shared/buckets'
 
 const PROMO_KEY = 'admin/platform/promo-banner.json'
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     // Promo is public-readable for the landing page; auth optional.
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
-    const object = await context.env.CLIENT_DATA.get(PROMO_KEY)
+    const bucket = getAgencyBucket(context.env)
+    const object = await bucket.get(PROMO_KEY)
     if (!object) return json({ config: null })
     return json({ config: await object.json() })
   } catch (error) {
@@ -20,14 +19,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 export const onRequestPut: PagesFunction<Env> = async (context) => {
   try {
     await requirePlatformActor(context.request, context.env)
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
+    const bucket = getAgencyBucket(context.env)
     const body = (await context.request.json()) as { config?: unknown }
     if (!body.config || typeof body.config !== 'object') {
       return json({ error: 'config object is required' }, 400)
     }
-    await context.env.CLIENT_DATA.put(PROMO_KEY, JSON.stringify(body.config), {
+    await bucket.put(PROMO_KEY, JSON.stringify(body.config), {
       httpMetadata: { contentType: 'application/json' },
     })
     return json({ ok: true })

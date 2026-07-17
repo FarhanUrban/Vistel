@@ -36,7 +36,7 @@ export const useRejectionsStore = defineStore('rejections', () => {
     )
   }
 
-  async function loadRejectedApplication() {
+  async function loadRejectedApplication(applicationId?: string | null) {
     const auth = useAuthStore()
     const userId = auth.user?.id ?? 'mock-user-1'
 
@@ -44,10 +44,25 @@ export const useRejectionsStore = defineStore('rejections', () => {
     error.value = null
     try {
       const apps = await visaService.getApplications(userId)
-      const rejected = apps.find((a) => a.status === 'rejected')
-      currentApplication.value = rejected ?? null
+      const rejected = applicationId
+        ? apps.find((a) => a.id === applicationId && a.status === 'rejected') ?? null
+        : apps
+            .filter((a) => a.status === 'rejected')
+            .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0] ?? null
+      currentApplication.value = rejected
       if (rejected?.rejectionCode) {
         rejectionReason.value = getReasonByCode(rejected.rejectionCode) ?? null
+      } else if (rejected?.rejectionOther) {
+        rejectionReason.value = {
+          code: 'OTHER',
+          title: 'Custom rejection reason',
+          description: rejected.rejectionOther,
+        }
+      } else {
+        rejectionReason.value = null
+      }
+      if (applicationId && !rejected) {
+        error.value = 'That rejected application was not found.'
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load rejection details'

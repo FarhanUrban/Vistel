@@ -1,7 +1,7 @@
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
 import type { VisaApplication, VisaApplicationStatus, User } from '@/types'
 import { useMockServices, useFirebaseDocumentStorage } from './config'
-import { getFirestoreDb } from './api'
+import { getFirebaseAuth, getFirestoreDb } from './api'
 import {
   updateLocalApplication,
   getEveryLocalApplication,
@@ -31,11 +31,21 @@ function mapApplicationDoc(id: string, data: Record<string, unknown>): VisaAppli
     rejectionCode: data.rejectionCode as string | undefined,
     rejectionOther: data.rejectionOther as string | undefined,
     rejectionDetails: data.rejectionDetails as string | undefined,
+    acceptanceNote: data.acceptanceNote as string | undefined,
     encrypted: data.encrypted as boolean | undefined,
     encryptedPayloadRef: data.encryptedPayloadRef as string | undefined,
+    storageFormat: data.storageFormat as VisaApplication['storageFormat'],
     orgId: data.orgId as string | undefined,
+    keyId: data.keyId as string | undefined,
+    passportCountry: data.passportCountry as string | undefined,
+    passportType: data.passportType as VisaApplication['passportType'],
+    hasAdditionalDocs: data.hasAdditionalDocs as boolean | undefined,
+    clientName: data.clientName as string | undefined,
+    clientEmail: data.clientEmail as string | undefined,
+    reviewedByUid: data.reviewedByUid as string | undefined,
     answers: data.answers as VisaApplication['answers'],
     documents: data.documents as VisaApplication['documents'],
+    resubmissionOf: data.resubmissionOf as string | undefined,
   }
 }
 
@@ -160,9 +170,54 @@ export interface ReviewApplicationInput {
   actorEmail?: string
   actorRole?: User['role']
   decision: 'approve' | 'reject'
+  acceptanceNote?: string
   rejectionCode?: string
   rejectionOther?: string
   rejectionDetails?: string
+}
+
+async function postServerDecision(
+  input: ReviewApplicationInput,
+): Promise<VisaApplication | null> {
+  const { buildPortalAuthHeader, readPortalSession } = await import('./portalToken')
+  let authHeader: string | null = null
+  try {
+    const token = await getFirebaseAuth().currentUser?.getIdToken()
+    if (token) authHeader = `Bearer ${token}`
+  } catch {
+    // portal
+  }
+  if (!authHeader) {
+    const portal = readPortalSession()
+    if (portal) authHeader = await buildPortalAuthHeader(portal)
+  }
+  if (!authHeader) return null
+
+  const response = await fetch('/api/applications/decision', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Authorization: authHeader,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      applicationId: input.applicationId,
+      orgId: input.orgId,
+      decision: input.decision,
+      acceptanceNote: input.acceptanceNote,
+      rejectionCode: input.rejectionCode,
+      rejectionOther: input.rejectionOther,
+      rejectionDetails: input.rejectionDetails,
+    }),
+  })
+  const payload = (await response.json().catch(() => ({}))) as {
+    error?: string
+    application?: VisaApplication
+  }
+  if (!response.ok || !payload.application) {
+    throw new Error(payload.error || 'Decision failed')
+  }
+  return payload.application
 }
 
 export async function reviewApplication(input: ReviewApplicationInput): Promise<VisaApplication> {
@@ -179,6 +234,15 @@ export async function reviewApplication(input: ReviewApplicationInput): Promise<
     })
   ) {
     throw new Error('Admins cannot review applications.')
+  }
+
+  if (input.decision === 'reject') {
+    if (!input.rejectionCode && !input.rejectionOther?.trim()) {
+      throw new Error('Rejection requires a code or custom reason')
+    }
+    if (input.rejectionCode === 'OTHER' && !input.rejectionOther?.trim()) {
+      throw new Error('Custom reason is required when rejection code is OTHER')
+    }
   }
 
   const org = getAgencyOrg(input.orgId)
@@ -204,18 +268,58 @@ export async function reviewApplication(input: ReviewApplicationInput): Promise<
     )
   }
 
+  // Prefer authorized server decision (persists notification + application atomically).
+  if (!useMockServices()) {
+    try {
+      const remote = await postServerDecision(input)
+      if (remote) {
+        const updated = await updateApplication(input.applicationId, remote)
+        notifyApplicationDecision({
+          userId: app.userId,
+          applicationId: app.id,
+          status: updated.status,
+          rejectionCode: updated.rejectionCode,
+          rejectionOther: updated.rejectionOther,
+          rejectionDetails: updated.rejectionDetails,
+          acceptanceNote: updated.acceptanceNote,
+        })
+        appendAuditEntry({
+          actorUid: input.actorUid,
+          orgId: input.orgId,
+          action: input.decision === 'approve' ? 'application_approved' : 'application_rejected',
+          applicationId: app.id,
+        })
+        syncOrgStats(input.orgId)
+        return updated
+      }
+    } catch (error) {
+      // Fall through only for mock/local; otherwise surface server validation errors.
+      if (!useFirebaseDocumentStorage() && useMockServices()) {
+        // continue
+      } else {
+        throw error
+      }
+    }
+  }
+
   const patch: Partial<VisaApplication> = {
     reviewedAt: new Date().toISOString(),
     orgId: input.orgId,
+    reviewedByUid: input.actorUid,
   }
 
   if (input.decision === 'approve') {
     patch.status = 'awaiting_payment'
+    patch.acceptanceNote = input.acceptanceNote
+    patch.rejectionCode = undefined
+    patch.rejectionOther = undefined
+    patch.rejectionDetails = undefined
   } else {
     patch.status = 'rejected'
-    patch.rejectionCode = input.rejectionCode
+    patch.rejectionCode = input.rejectionCode || 'OTHER'
     patch.rejectionOther = input.rejectionOther
     patch.rejectionDetails = input.rejectionDetails
+    patch.acceptanceNote = undefined
   }
 
   const updated = await updateApplication(input.applicationId, patch)
@@ -227,6 +331,7 @@ export async function reviewApplication(input: ReviewApplicationInput): Promise<
     rejectionCode: updated.rejectionCode,
     rejectionOther: updated.rejectionOther,
     rejectionDetails: updated.rejectionDetails,
+    acceptanceNote: updated.acceptanceNote,
   })
 
   appendAuditEntry({

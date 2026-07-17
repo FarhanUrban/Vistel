@@ -1,6 +1,6 @@
 import { initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
 import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics'
-import { browserLocalPersistence, getAuth, setPersistence, type Auth } from 'firebase/auth'
+import { browserSessionPersistence, getAuth, setPersistence, type Auth } from 'firebase/auth'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 import { getStorage, type FirebaseStorage } from 'firebase/storage'
 import { useMockServices } from './config'
@@ -70,7 +70,10 @@ export function getFirebaseAuth(): Auth {
   return auth
 }
 
-/** Initializes Auth with local persistence (required for hosted session restore). */
+/**
+ * Initializes Auth with session persistence (cleared when the browser session ends).
+ * Long-lived identity is the D1 HttpOnly cookie (30-minute idle), not localStorage.
+ */
 export async function initFirebaseAuth(): Promise<Auth> {
   if (useMockServices()) {
     throw new Error(
@@ -81,7 +84,7 @@ export async function initFirebaseAuth(): Promise<Auth> {
 
   authInitPromise = (async () => {
     const firebaseAuth = getFirebaseAuth()
-    await setPersistence(firebaseAuth, browserLocalPersistence)
+    await setPersistence(firebaseAuth, browserSessionPersistence)
     return firebaseAuth
   })()
 

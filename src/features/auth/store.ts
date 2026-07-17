@@ -5,6 +5,7 @@ import type { SocialAuthProvider } from '@/features/auth/types'
 import * as authService from '@/services/authService'
 import { formatAuthError } from '@/services/authErrors'
 import { wipeAllAppData } from '@/services/appReset'
+import type { DeleteAccountPhase } from '@/services/accountService'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -68,19 +69,23 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       await authService.signOut()
-      user.value = null
     } catch (e) {
       error.value = formatAuthError(e)
     } finally {
+      // Always clear local identity so Sign Out cannot leave a sticky session.
+      user.value = null
       isLoading.value = false
     }
   }
 
-  async function deleteAccount(password?: string) {
+  async function deleteAccount(
+    password?: string,
+    onPhase?: (phase: DeleteAccountPhase) => void,
+  ) {
     isLoading.value = true
     error.value = null
     try {
-      await authService.deleteAccount(password)
+      await authService.deleteAccount(password, onPhase)
       wipeAllAppData()
       user.value = null
     } catch (e) {

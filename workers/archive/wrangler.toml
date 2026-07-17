@@ -1,0 +1,18 @@
+name = "vislet-archive"
+main = "src/index.ts"
+compatibility_date = "2026-07-14"
+
+[[r2_buckets]]
+binding = "CLIENT_DATA"
+bucket_name = "client-data"
+
+[[r2_buckets]]
+binding = "AGENCY_LOGINS"
+bucket_name = "agency-logins"
+
+[[r2_buckets]]
+binding = "OLD_CLIENT_DATA"
+bucket_name = "old-client-data"
+
+[triggers]
+crons = ["0 3 */14 * *"]

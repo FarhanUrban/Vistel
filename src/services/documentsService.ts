@@ -1,6 +1,5 @@
-import type { EncryptedEnvelope } from '@/types'
-import { encryptPayload } from './countryCrypto'
-import { assignOrgForDestination, getCountryKeyEntry } from './agencyOrgService'
+import type { PassportType } from '@/types'
+import { assignOrgForDestination } from './agencyOrgService'
 import { assertCanSubmit, recordSubmission } from './rateLimitService'
 import {
   getLocalApplications,
@@ -9,17 +8,17 @@ import {
   type DocumentScope,
   pretendUploadDocument,
 } from './localDocumentStorage'
-import { saveEncryptedPayload } from './platformStorage'
 import type { RequiredDocument, UploadedDocument, VisaQuestion, VisaType } from '@/types'
 import {
   useMockServices,
   useFirebaseDocumentStorage,
   useR2DocumentStorage,
 } from './config'
-import { getFirebaseStorage } from './api'
+import { getFirebaseAuth, getFirebaseStorage } from './api'
 import { iso2ToLegacySlug } from './visaIndexService'
 import { mockSubmitApplication } from './mocks/documentsMocks'
-import { uploadDocumentToR2, uploadEncryptedBlobToR2 } from './r2Storage'
+import { uploadDocumentToR2 } from './r2Storage'
+import { buildPortalAuthHeader, readPortalSession } from './portalToken'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import requiredDocsData from './data/requiredDocuments.json'
 import visaQuestionsData from './data/visaQuestions.json'
@@ -30,13 +29,27 @@ export interface SubmitApplicationInput {
   visaType: VisaType
   documents: UploadedDocument[]
   answers: Record<string, string>
+  clientName: string
+  clientEmail?: string
+  passportCountry?: string | null
+  passportType?: PassportType | null
+  hasAdditionalDocs?: boolean | null
+  resubmissionOf?: string
 }
 
+/** Legacy shape kept for older encrypted records in the agency UI. */
 export interface EncryptedApplicationPayload {
   answers: Record<string, string>
   documents: Pick<UploadedDocument, 'id' | 'name' | 'uploadedAt' | 'documentTypeId'>[]
   clientName?: string
   clientEmail?: string
+  passportCountry?: string
+  passportType?: string
+  hasAdditionalDocs?: boolean
+  destinationCountry?: string
+  visaType?: string
+  orgId?: string
+  keyId?: string
 }
 
 function sanitizeStorageFileName(name: string): string {
@@ -74,6 +87,18 @@ function lookupByCountryVisa<T>(
   if (data[legacyKey]) return data[legacyKey]
 
   return undefined
+}
+
+async function getAuthHeader(): Promise<string | null> {
+  try {
+    const user = getFirebaseAuth().currentUser
+    if (user) return `Bearer ${await user.getIdToken()}`
+  } catch {
+    // portal / mock
+  }
+  const portal = readPortalSession()
+  if (portal) return buildPortalAuthHeader(portal)
+  return null
 }
 
 export async function getUserDocuments(
@@ -124,33 +149,22 @@ export async function uploadDocument(
 
   if (useR2DocumentStorage()) {
     try {
-      const countryEntry = getCountryKeyEntry(scope.destinationCountry)
-      if (countryEntry?.publicKeyJwk?.n) {
-        const { encryptBytes } = await import('./countryCrypto')
-        const envelope = await encryptBytes(countryEntry.publicKeyJwk, await file.arrayBuffer())
-        const uploaded = await uploadEncryptedBlobToR2(envelope, {
-          documentTypeId,
-          destinationCountry: scope.destinationCountry,
-          visaType: scope.visaType,
-          fileName: file.name,
-          applicationId: 'pending',
-        })
-        return upsertStoredDocumentMeta(userId, documentTypeId, scope, {
-          id: uploaded.key,
-          name: file.name,
-          uploadedAt: uploaded.uploadedAt,
-          url: uploaded.url,
-        })
+      const assignedOrgId = assignOrgForDestination(scope.destinationCountry)
+      if (!assignedOrgId) {
+        throw new Error(
+          'No reviewing agency is available for this destination yet. Please check back soon.',
+        )
       }
-
       const uploaded = await uploadDocumentToR2(file, {
         documentTypeId,
         destinationCountry: scope.destinationCountry,
         visaType: scope.visaType,
+        applicationId: 'draft',
+        orgId: assignedOrgId,
       })
       return upsertStoredDocumentMeta(userId, documentTypeId, scope, {
         id: uploaded.key,
-        name: uploaded.name,
+        name: file.name,
         uploadedAt: uploaded.uploadedAt,
         url: uploaded.url,
       })
@@ -178,13 +192,12 @@ export async function uploadDocument(
 }
 
 export async function submitApplication(input: SubmitApplicationInput): Promise<string> {
+  if (!input.clientName?.trim()) {
+    throw new Error('Full legal name is required')
+  }
+
   const userApps = getLocalApplications(input.userId)
   assertCanSubmit(input.userId, input.destinationCountry, userApps)
-
-  const countryEntry = getCountryKeyEntry(input.destinationCountry)
-  if (!countryEntry?.publicKeyJwk?.n) {
-    throw new Error('Encryption is not configured for this destination yet.')
-  }
 
   const assignedOrgId = assignOrgForDestination(input.destinationCountry)
   if (!assignedOrgId) {
@@ -200,24 +213,93 @@ export async function submitApplication(input: SubmitApplicationInput): Promise<
     documentTypeId: doc.documentTypeId,
   }))
 
-  const sensitivePayload: EncryptedApplicationPayload = {
-    answers: input.answers,
-    documents: documentMeta,
+  if (useR2DocumentStorage() && !useMockServices()) {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) throw new Error('You must be signed in to submit an application')
+
+    const response = await fetch('/api/applications/submit', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        destinationCountry: input.destinationCountry,
+        visaType: input.visaType,
+        orgId: assignedOrgId,
+        passportCountry: input.passportCountry,
+        passportType: input.passportType,
+        hasAdditionalDocs: input.hasAdditionalDocs,
+        clientName: input.clientName.trim(),
+        clientEmail: input.clientEmail,
+        answers: input.answers,
+        resubmissionOf: input.resubmissionOf,
+        documents: input.documents.map((doc) => ({
+          key: doc.id,
+          name: doc.name,
+          uploadedAt: doc.uploadedAt,
+          documentTypeId: doc.documentTypeId,
+        })),
+      }),
+    })
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string
+      applicationId?: string
+      application?: {
+        id: string
+        documents?: typeof documentMeta
+        orgId?: string
+      }
+      documents?: typeof documentMeta
+    }
+    if (!response.ok || !payload.applicationId) {
+      throw new Error(payload.error || 'Application submission failed')
+    }
+
+    const remappedDocs = payload.documents ?? payload.application?.documents ?? documentMeta
+    saveLocalApplication(
+      input.userId,
+      input.destinationCountry,
+      input.visaType,
+      remappedDocs,
+      input.answers,
+      {
+        id: payload.applicationId,
+        storageFormat: 'server-readable-v1',
+        encrypted: false,
+        orgId: payload.application?.orgId ?? assignedOrgId,
+        clientName: input.clientName.trim(),
+        clientEmail: input.clientEmail,
+        passportCountry: input.passportCountry?.toUpperCase() || undefined,
+        passportType: input.passportType || undefined,
+        hasAdditionalDocs:
+          typeof input.hasAdditionalDocs === 'boolean' ? input.hasAdditionalDocs : undefined,
+        resubmissionOf: input.resubmissionOf,
+      },
+    )
+
+    recordSubmission(input.userId, payload.applicationId)
+    const { syncOrgStats } = await import('./agencyOrgService')
+    syncOrgStats(assignedOrgId)
+    return payload.applicationId
   }
 
-  const envelope = await encryptPayload(countryEntry.publicKeyJwk, sensitivePayload)
   const applicationId =
     useMockServices() || !useFirebaseDocumentStorage()
       ? saveLocalApplication(
           input.userId,
           input.destinationCountry,
           input.visaType,
-          [],
-          {},
+          documentMeta,
+          input.answers,
           {
-            encrypted: true,
-            encryptedPayloadRef: `local://encrypted/${Date.now()}`,
+            storageFormat: 'server-readable-v1',
+            encrypted: false,
             orgId: assignedOrgId,
+            clientName: input.clientName.trim(),
+            clientEmail: input.clientEmail,
+            resubmissionOf: input.resubmissionOf,
           },
         )
       : await (async () => {
@@ -230,14 +312,21 @@ export async function submitApplication(input: SubmitApplicationInput): Promise<
             destinationCountry: input.destinationCountry.toUpperCase(),
             visaType: input.visaType,
             submittedAt: new Date().toISOString(),
-            encrypted: true,
-            encryptedPayloadRef: 'firestore',
+            storageFormat: 'server-readable-v1',
+            encrypted: false,
+            answers: input.answers,
             orgId: assignedOrgId,
+            passportCountry: input.passportCountry?.toUpperCase() || null,
+            passportType: input.passportType || null,
+            hasAdditionalDocs:
+              typeof input.hasAdditionalDocs === 'boolean' ? input.hasAdditionalDocs : null,
+            clientName: input.clientName.trim(),
+            clientEmail: input.clientEmail || null,
+            resubmissionOf: input.resubmissionOf || null,
           })
           return docRef.id
         })()
 
-  saveEncryptedPayload(applicationId, envelope)
   recordSubmission(input.userId, applicationId)
 
   if (useMockServices()) {
@@ -250,6 +339,27 @@ export async function submitApplication(input: SubmitApplicationInput): Promise<
   return applicationId
 }
 
+/** Fetch a submitted document for agency/admin review (raw bytes). */
+export async function fetchSubmittedDocument(
+  documentKey: string,
+): Promise<{ bytes: ArrayBuffer; contentType: string; fileName: string }> {
+  const authHeader = await getAuthHeader()
+  if (!authHeader) throw new Error('You must be signed in to open documents')
+  const response = await fetch(`/api/files?key=${encodeURIComponent(documentKey)}`, {
+    credentials: 'include',
+    headers: { Authorization: authHeader },
+  })
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: string }
+    throw new Error(payload.error || 'Failed to download document')
+  }
+  const bytes = await response.arrayBuffer()
+  const contentType = response.headers.get('content-type') || 'application/octet-stream'
+  const fileName = documentKey.split('/').pop() || 'document'
+  return { bytes, contentType, fileName }
+}
+
+/** @deprecated Legacy encrypted path — kept for old records only. */
 export async function decryptApplicationPayload(
   applicationId: string,
   privateKeyJwk: JsonWebKey,
@@ -261,4 +371,24 @@ export async function decryptApplicationPayload(
   return decryptPayload<EncryptedApplicationPayload>(privateKeyJwk, envelope)
 }
 
-export type { EncryptedEnvelope }
+/** @deprecated Legacy encrypted path — kept for old records only. */
+export async function decryptSubmittedDocument(
+  documentKey: string,
+  privateKeyJwk: JsonWebKey,
+): Promise<{ bytes: ArrayBuffer; contentType: string; fileName: string }> {
+  const authHeader = await getAuthHeader()
+  if (!authHeader) throw new Error('You must be signed in to open documents')
+  const response = await fetch(`/api/files?key=${encodeURIComponent(documentKey)}`, {
+    credentials: 'include',
+    headers: { Authorization: authHeader },
+  })
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: string }
+    throw new Error(payload.error || 'Failed to download document')
+  }
+  const envelope = (await response.json()) as import('@/types').EncryptedEnvelope
+  const { decryptBytes } = await import('./countryCrypto')
+  const bytes = await decryptBytes(privateKeyJwk, envelope)
+  const fileName = documentKey.split('/').pop()?.replace(/\.enc\.json$/, '') || 'document'
+  return { bytes, contentType: 'application/octet-stream', fileName }
+}

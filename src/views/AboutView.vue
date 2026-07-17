@@ -2,6 +2,7 @@
 import AppShell from '@/layouts/AppShell.vue'
 import AppCard from '@/components/AppCard.vue'
 import AppLogo from '@/components/AppLogo.vue'
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '@/services/contactConfig'
 </script>
 
 <template>
@@ -32,8 +33,12 @@ import AppLogo from '@/components/AppLogo.vue'
     </AppCard>
 
     <AppCard>
-      <h2 class="font-medium text-navy mb-2">Contact</h2>
-      <p class="text-sm text-gray-600">support@vislet.app</p>
+      <h2 class="font-medium text-navy mb-2">Customer Support</h2>
+      <p class="text-sm text-gray-600">
+        <a :href="SUPPORT_MAILTO" class="font-medium text-accent-blue hover:underline">
+          {{ SUPPORT_EMAIL }}
+        </a>
+      </p>
     </AppCard>
   </AppShell>
 </template>

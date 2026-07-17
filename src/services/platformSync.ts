@@ -58,6 +58,7 @@ async function platformFetch(
     const timer = window.setTimeout(() => controller.abort(), 12000)
     const res = await fetch(path, {
       ...requestInit,
+      credentials: 'include',
       headers,
       signal: controller.signal,
     })
@@ -127,9 +128,9 @@ export async function fetchCountryKeysFromR2(): Promise<CountryKeyRegistryEntry[
   return Array.isArray(data?.keys) ? data.keys : null
 }
 
-export async function deleteCountryKeyFromR2(iso2: string): Promise<boolean> {
+export async function deleteCountryKeyFromR2(orgId: string, iso2: string): Promise<boolean> {
   const res = await platformFetch(
-    `/api/platform/country-key-reset?iso2=${encodeURIComponent(iso2)}`,
+    `/api/platform/country-key-reset?orgId=${encodeURIComponent(orgId)}&iso2=${encodeURIComponent(iso2)}`,
     { method: 'DELETE' },
   )
   return Boolean(res?.ok)

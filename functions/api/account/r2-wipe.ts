@@ -1,4 +1,8 @@
 import { json, requireFirebaseUid, type Env } from '../../_shared/auth'
+import { getAgencyBucket, getClientBucket } from '../../_shared/buckets'
+import { revokeUserSessions } from '../../_shared/sessions'
+
+const APPS_KEY = 'admin/platform/applications.json'
 
 async function deletePrefix(bucket: R2Bucket, prefix: string): Promise<number> {
   let deleted = 0
@@ -35,19 +39,73 @@ async function deleteApplicantObjectsForUser(bucket: R2Bucket, uid: string): Pro
   return deleted
 }
 
+async function removeUserApplicationsAndEnvelopes(
+  bucket: R2Bucket,
+  uid: string,
+): Promise<{ appsRemoved: number; envelopesRemoved: number }> {
+  const object = await bucket.get(APPS_KEY)
+  let appsRemoved = 0
+  let envelopesRemoved = 0
+  if (!object) return { appsRemoved, envelopesRemoved }
+
+  const data = (await object.json()) as { applications?: Array<Record<string, unknown>> }
+  const applications = Array.isArray(data.applications) ? data.applications : []
+  const kept: Array<Record<string, unknown>> = []
+  const removedIds: string[] = []
+
+  for (const app of applications) {
+    if (app.userId === uid && typeof app.id === 'string') {
+      removedIds.push(app.id)
+      appsRemoved += 1
+    } else {
+      kept.push(app)
+    }
+  }
+
+  if (appsRemoved > 0) {
+    await bucket.put(APPS_KEY, JSON.stringify({ applications: kept }), {
+      httpMetadata: { contentType: 'application/json' },
+    })
+  }
+
+  for (const id of removedIds) {
+    const key = `admin/envelopes/${id}.json`
+    const existing = await bucket.head(key)
+    if (existing) {
+      await bucket.delete(key)
+      envelopesRemoved += 1
+    }
+  }
+
+  return { appsRemoved, envelopesRemoved }
+}
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     const { uid } = await requireFirebaseUid(context.request, context.env)
-    if (!context.env.CLIENT_DATA) {
-      return json({ error: 'R2 bucket CLIENT_DATA is not bound' }, 500)
-    }
+    const client = getClientBucket(context.env)
+    const agency = getAgencyBucket(context.env)
 
-    const bucket = context.env.CLIENT_DATA
-    const deleted =
-      (await deletePrefix(bucket, `users/${uid}/`)) +
-      (await deleteApplicantObjectsForUser(bucket, uid))
+    const deletedUsers = await deletePrefix(client, `users/${uid}/`)
+    // Clean both buckets during cutover (applicants may still live on CLIENT_DATA).
+    const deletedApplicants =
+      (await deleteApplicantObjectsForUser(agency, uid)) +
+      (agency !== client ? await deleteApplicantObjectsForUser(client, uid) : 0)
+    const { appsRemoved, envelopesRemoved } = await removeUserApplicationsAndEnvelopes(
+      agency,
+      uid,
+    )
 
-    return json({ ok: true, deleted })
+    await revokeUserSessions(context.env, uid)
+
+    return json({
+      ok: true,
+      deleted: deletedUsers + deletedApplicants + appsRemoved + envelopesRemoved,
+      deletedUsers,
+      deletedApplicants,
+      appsRemoved,
+      envelopesRemoved,
+    })
   } catch (error) {
     if (error instanceof Response) return error
     return json({ error: error instanceof Error ? error.message : 'Wipe failed' }, 500)

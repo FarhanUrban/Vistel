@@ -11,6 +11,22 @@
     {
       "binding": "CLIENT_DATA",
       "bucket_name": "client-data"
+    },
+    {
+      "binding": "AGENCY_LOGINS",
+      "bucket_name": "agency-logins"
+    },
+    {
+      "binding": "OLD_CLIENT_DATA",
+      "bucket_name": "old-client-data"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vislet-sessions",
+      "database_id": "fcb6389a-c973-4077-8f31-4e690d88faab",
+      "migrations_dir": "migrations"
     }
   ]
 }

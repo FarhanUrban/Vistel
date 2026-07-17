@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { startDashboardPoller } from '@/services/dashboardPoller'
 import AppCard from '@/components/AppCard.vue'
 import AppButton from '@/components/AppButton.vue'
 import AppErrorMessage from '@/components/AppErrorMessage.vue'
@@ -35,8 +36,18 @@ const workingOnDrafts = computed(() => {
   })
 })
 
+let stopPoller: (() => void) | null = null
+
 onMounted(() => {
-  dashboardStore.loadDashboard()
+  void dashboardStore.loadDashboard()
+  stopPoller = startDashboardPoller(async () => {
+    await dashboardStore.loadDashboard()
+  })
+})
+
+onUnmounted(() => {
+  stopPoller?.()
+  stopPoller = null
 })
 
 function formatDate(dateString: string): string {

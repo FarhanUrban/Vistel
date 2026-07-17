@@ -60,14 +60,6 @@ function handleSocialSuccess() {
         <AppButton type="submit" full-width :loading="authStore.isLoading">Log In</AppButton>
       </form>
 
-      <p class="mt-3 text-center text-xs text-navy/45">
-        Demo portals:
-        <span class="font-medium text-navy/70">admin@vislet.com</span>
-        /
-        <span class="font-medium text-navy/70">agency@vislet.com</span>
-        (any password)
-      </p>
-
       <SocialSignInButtons @success="handleSocialSuccess" />
 
       <p class="mt-6 text-center text-sm text-navy/60">

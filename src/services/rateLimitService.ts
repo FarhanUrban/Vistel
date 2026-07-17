@@ -5,7 +5,7 @@ import {
   SUBMISSION_WINDOW_MS,
 } from './platformConfig'
 import { appendSubmissionLog, loadSubmissionLog } from './platformStorage'
-import { isCountryLive, isCountryKeyReady } from './agencyOrgService'
+import { isDestinationAvailable } from './agencyOrgService'
 
 const OPEN_STATUSES = new Set<VisaApplication['status']>([
   'submitted',
@@ -34,15 +34,9 @@ export function assertCanSubmit(
 ): void {
   const iso2 = destinationCountry.toUpperCase()
 
-  if (!isCountryLive(iso2)) {
+  if (!isDestinationAvailable(iso2)) {
     throw new CountryNotAvailableError(
       'This destination is not available yet. We are onboarding agencies — check back soon.',
-    )
-  }
-
-  if (!isCountryKeyReady(iso2)) {
-    throw new CountryNotAvailableError(
-      'Agency encryption for this destination is not set up yet. Please try again later.',
     )
   }
 

@@ -93,10 +93,10 @@ function upsertUserApplication(application: VisaApplication): string {
   )
 
   if (existingIndex >= 0) {
-    const keptId = apps[existingIndex].id
-    apps[existingIndex] = { ...application, id: keptId }
+    // Prefer the incoming id (server-issued UUID) so remapped documents/envelopes stay linked.
+    apps[existingIndex] = { ...apps[existingIndex], ...application }
     saveApps(apps)
-    return keptId
+    return application.id
   }
 
   saveApps([...apps, application])
@@ -237,30 +237,38 @@ export function saveLocalApplication(
   extras: Partial<
     Pick<
       VisaApplication,
+      | 'id'
       | 'encrypted'
       | 'encryptedPayloadRef'
+      | 'storageFormat'
       | 'agencyId'
       | 'orgId'
+      | 'keyId'
       | 'clientName'
       | 'clientEmail'
+      | 'passportCountry'
+      | 'passportType'
+      | 'hasAdditionalDocs'
+      | 'submittedAt'
+      | 'resubmissionOf'
     >
   > = {},
 ): string {
   const application: VisaApplication = {
-    id: `app-${Date.now()}`,
+    id: extras.id || `app-${Date.now()}`,
     userId,
     status: 'submitted',
     destinationCountry: destinationCountry.toUpperCase(),
     visaType,
-    submittedAt: new Date().toISOString(),
+    submittedAt: extras.submittedAt || new Date().toISOString(),
     documents: documents.map((doc) => ({
       id: doc.id,
       name: doc.name,
       uploadedAt: doc.uploadedAt,
       documentTypeId: doc.documentTypeId,
     })),
-    // Sensitive answers stay out of the cleartext application record when encrypted.
-    answers: extras.encrypted ? {} : answers,
+    // Legacy encrypted records omit cleartext answers; new submissions keep them.
+    answers: extras.encrypted && extras.storageFormat !== 'server-readable-v1' ? {} : answers,
     ...extras,
   }
   return upsertUserApplication(application)

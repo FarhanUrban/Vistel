@@ -27,6 +27,7 @@ export async function uploadDocumentToR2(
     destinationCountry: string
     visaType: string
     applicationId?: string
+    orgId?: string
   },
 ): Promise<R2UploadResult> {
   const token = await getFirebaseIdToken()
@@ -37,9 +38,11 @@ export async function uploadDocumentToR2(
   form.set('visaType', meta.visaType)
   form.set('fileName', file.name)
   if (meta.applicationId) form.set('applicationId', meta.applicationId)
+  if (meta.orgId) form.set('orgId', meta.orgId)
 
   const response = await fetch('/api/files/upload', {
     method: 'POST',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   })
@@ -59,6 +62,8 @@ export async function uploadEncryptedBlobToR2(
     visaType: string
     fileName: string
     applicationId: string
+    orgId?: string
+    keyId?: string
   },
 ): Promise<R2UploadResult> {
   const token = await getFirebaseIdToken()
@@ -71,9 +76,12 @@ export async function uploadEncryptedBlobToR2(
   form.set('fileName', meta.fileName)
   form.set('applicationId', meta.applicationId)
   form.set('encrypted', 'true')
+  if (meta.orgId) form.set('orgId', meta.orgId)
+  if (meta.keyId) form.set('keyId', meta.keyId)
 
   const response = await fetch('/api/files/upload', {
     method: 'POST',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   })
@@ -89,6 +97,7 @@ export async function wipeUserR2Data(): Promise<void> {
   const token = await getFirebaseIdToken()
   const response = await fetch('/api/account/r2-wipe', {
     method: 'POST',
+    credentials: 'include',
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
@@ -112,6 +121,8 @@ export async function registerCountryPublicKey(
   iso2: string,
   publicKeyJwk: JsonWebKey,
   orgId: string,
+  keyId = crypto.randomUUID(),
+  privateKeyJwk?: JsonWebKey,
 ): Promise<void> {
   let authHeader: string | null = null
   try {
@@ -126,14 +137,18 @@ export async function registerCountryPublicKey(
   if (!authHeader) {
     throw new Error('You must be signed in to register a country key')
   }
+  if (!privateKeyJwk?.d) {
+    throw new Error('privateKeyJwk is required for server-side escrow')
+  }
 
   const response = await fetch('/api/country-keys/register', {
     method: 'POST',
+    credentials: 'include',
     headers: {
       Authorization: authHeader,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ iso2, publicKeyJwk, orgId }),
+    body: JSON.stringify({ iso2, publicKeyJwk, privateKeyJwk, orgId, keyId }),
   })
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { error?: string }

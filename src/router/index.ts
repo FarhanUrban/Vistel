@@ -79,19 +79,19 @@ const router = createRouter({
       path: '/payment',
       name: 'Payment',
       component: () => import('@/views/PaymentView.vue'),
-      meta: { title: 'Payment' },
+      meta: { title: 'Payment', requiresAuth: true },
     },
     {
       path: '/payment/success',
       name: 'PaymentSuccess',
       component: () => import('@/views/PaymentSuccessView.vue'),
-      meta: { title: 'Payment Successful' },
+      meta: { title: 'Payment Successful', requiresAuth: true },
     },
     {
       path: '/dashboard',
       name: 'Dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { title: 'Dashboard' },
+      meta: { title: 'Dashboard', requiresAuth: true },
     },
     {
       path: '/about',
@@ -133,13 +133,13 @@ const router = createRouter({
       path: '/rejections/why-rejected',
       name: 'WhyRejected',
       component: () => import('@/views/WhyRejectedView.vue'),
-      meta: { title: 'Why You Were Rejected' },
+      meta: { title: 'Why You Were Rejected', requiresAuth: true },
     },
     {
       path: '/rejections/waiting',
       name: 'WaitingForCheck',
       component: () => import('@/views/WaitingForCheckView.vue'),
-      meta: { title: 'Waiting for E-Visa Check' },
+      meta: { title: 'Waiting for E-Visa Check', requiresAuth: true },
     },
     {
       path: '/agency',
@@ -196,6 +196,11 @@ router.beforeEach(async (to) => {
 
   if (!to.meta.requiresAuth || useMockServices()) {
     if (!useMockServices() && to.name === 'Dashboard') {
+      // Explicit exit from onboarding (Back) — do not bounce back into the wizard.
+      if (to.query.leaveOnboarding === '1') {
+        const { leaveOnboarding: _omit, ...rest } = to.query
+        return { name: 'Dashboard', query: rest, replace: true }
+      }
       if (authStore.user) {
         const onboarding = useOnboardingStore()
         if (!onboarding.isComplete()) {
