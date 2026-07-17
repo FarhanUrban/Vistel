@@ -117,7 +117,10 @@ async function goToQuestions() {
 }
 
 function openFinalize() {
-  if (!documentsStore.canFinalize) return
+  // The legal name is collected in the review dialog, so do not require it
+  // before opening that dialog. Requiring it here made "Review & submit"
+  // silently do nothing for applicants who had completed every question.
+  if (!documentsStore.allRequiredUploaded() || !documentsStore.allRequiredAnswered()) return
   finalizeOpen.value = true
 }
 

@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore'
 import type { VisaApplication, VisaApplicationStatus, User } from '@/types'
-import { useMockServices, useFirebaseDocumentStorage } from './config'
+import { useMockServices, useFirebaseDocumentStorage, useR2DocumentStorage } from './config'
 import { getFirebaseAuth, getFirestoreDb } from './api'
 import {
   updateLocalApplication,
@@ -49,6 +49,30 @@ function mapApplicationDoc(id: string, data: Record<string, unknown>): VisaAppli
   }
 }
 
+async function getPlatformAuthHeader(): Promise<string | null> {
+  try {
+    const token = await getFirebaseAuth().currentUser?.getIdToken()
+    if (token) return `Bearer ${token}`
+  } catch {
+    // Portal sessions do not use Firebase tokens.
+  }
+  const { buildPortalAuthHeader, readPortalSession } = await import('./portalToken')
+  const portal = readPortalSession()
+  return portal ? buildPortalAuthHeader(portal) : null
+}
+
+async function getServerApplications(): Promise<VisaApplication[] | null> {
+  const authHeader = await getPlatformAuthHeader()
+  if (!authHeader) return null
+  const response = await fetch('/api/platform/applications', {
+    credentials: 'include',
+    headers: { Authorization: authHeader },
+  })
+  const payload = (await response.json().catch(() => ({}))) as { applications?: VisaApplication[] }
+  if (!response.ok || !Array.isArray(payload.applications)) return null
+  return payload.applications
+}
+
 export async function getApplications(userId: string): Promise<VisaApplication[]> {
   if (useMockServices()) {
     const local = getLocalApplications(userId)
@@ -56,6 +80,17 @@ export async function getApplications(userId: string): Promise<VisaApplication[]
     const byId = new Map<string, VisaApplication>()
     for (const app of mocks) byId.set(app.id, app)
     for (const app of local) byId.set(app.id, app)
+    return [...byId.values()]
+  }
+  if (useR2DocumentStorage()) {
+    const local = getLocalApplications(userId)
+    const server = await getServerApplications()
+    if (!server) return local
+    const byId = new Map(local.map((app) => [app.id, app]))
+    for (const app of server) {
+      byId.set(app.id, app)
+      if (getLocalApplicationById(app.id)) updateLocalApplication(app.id, app)
+    }
     return [...byId.values()]
   }
   if (!useFirebaseDocumentStorage()) {
@@ -69,9 +104,18 @@ export async function getApplications(userId: string): Promise<VisaApplication[]
 }
 
 export async function getApplication(applicationId: string): Promise<VisaApplication | null> {
-  if (useMockServices() || !useFirebaseDocumentStorage()) {
+  if (useMockServices()) {
     return getLocalApplicationById(applicationId)
   }
+  if (useR2DocumentStorage()) {
+    const server = await getServerApplications()
+    const application = server?.find((app) => app.id === applicationId) ?? null
+    if (application && getLocalApplicationById(application.id)) {
+      updateLocalApplication(application.id, application)
+    }
+    return application ?? getLocalApplicationById(applicationId)
+  }
+  if (!useFirebaseDocumentStorage()) return getLocalApplicationById(applicationId)
   const db = getFirestoreDb()
   const snapshot = await getDoc(doc(db, 'applications', applicationId))
   if (!snapshot.exists()) return null
@@ -82,9 +126,28 @@ export async function updateApplication(
   applicationId: string,
   patch: Partial<VisaApplication>,
 ): Promise<VisaApplication> {
-  if (useMockServices() || !useFirebaseDocumentStorage()) {
+  if (useMockServices()) {
     return updateLocalApplication(applicationId, patch)
   }
+  if (useR2DocumentStorage()) {
+    const authHeader = await getPlatformAuthHeader()
+    if (!authHeader) throw new Error('You must be signed in to update payment status')
+    const response = await fetch('/api/applications/payment', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ applicationId, ...patch }),
+    })
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string
+      application?: VisaApplication
+    }
+    if (!response.ok || !payload.application) {
+      throw new Error(payload.error || 'Failed to update payment status')
+    }
+    return updateLocalApplication(applicationId, payload.application)
+  }
+  if (!useFirebaseDocumentStorage()) return updateLocalApplication(applicationId, patch)
   const db = getFirestoreDb()
   const ref = doc(db, 'applications', applicationId)
   await updateDoc(ref, patch)
